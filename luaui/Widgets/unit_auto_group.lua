@@ -91,11 +91,18 @@ function widget:GameStart()
 end
 
 function widget:PlayerChanged(playerID)
-	if Spring.GetSpectatingState() and (Spring.GetGameFrame() > 0 or gameStarted) then
+	if Spring.GetSpectatingState() and gameStarted then
 		widgetHandler:RemoveWidget()
 		return
 	end
 	myTeam = Spring.GetMyTeamID()
+end
+
+function widget:Initialize()
+	if Spring.GetGameFrame() > 0 then
+		gameStarted = true
+	end
+	widget:PlayerChanged()
 end
 
 local function ChangeUnitTypeAutogroupHandler(_, _, args, data)
