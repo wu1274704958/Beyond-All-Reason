@@ -1,3 +1,6 @@
+
+
+
 LosHST = class(Module) ---track every units: OWN ALLY ENEMY and insert in the right cell, then give to this cell a status 1 or  allynumber/teamnumber
 
 function LosHST:Name()
@@ -21,14 +24,11 @@ function LosHST:Init()
 	self.OWN = {}
 	self.ENEMY = {}
 	self.ai.friendlyTeamID = {}
+	self.unitBaseMetalCost = 100
 end
 
-function LosHST:Update()
-	if self.ai.schedulerhst.moduleTeam ~= self.ai.id or self.ai.schedulerhst.moduleUpdate ~= self:Name() then return end
-	self.ENEMY = {}
-	self.OWN = {}
-	self.ALLY = {}
-	for id,def in pairs(self.losEnemy) do
+function LosHST:scanLos()
+	for id,P in pairs(self.losEnemy) do
 		local unit = game:GetUnitByID(id)
 		local uPos = unit:GetPosition()
 		if self.losEnemy[id] and self.radarEnemy[id] then
@@ -37,22 +37,63 @@ function LosHST:Update()
 			self:cleanEnemy(id)
 		else
 			local X,Z = self.ai.maphst:PosToGrid(uPos)
-			self:setCellLos(self.ENEMY,unit,X,Z)
+			if X then
+				local oldX,oldZ = self.ai.maphst:PosToGrid(P)
+				if odlX ~= X or oldZ ~= Z then
+					self.losEnemy[id] = uPos
+				end
+			end
 		end
 	end
-	for id,def in pairs(self.radarEnemy) do
-		local unit = game:GetUnitByID(id)
-		local uPos = unit:GetPosition()
+end
 
+function LosHST:scanLos()
+	for id,P in pairs(self.losEnemy) do
+		local unit = game:GetUnitByID(id)
+		local uPos = unit:GetPosition()
 		if self.losEnemy[id] and self.radarEnemy[id] then
 			self:Warn('unit in los and in radar, with losStatus:' ,game:GetUnitLos(id))
 		elseif not  uPos or not unit:IsAlive()then
 			self:cleanEnemy(id)
 		else
 			local X,Z = self.ai.maphst:PosToGrid(uPos)
-			self:setCellRadar(self.ENEMY,unit,X,Z)
+			if X then
+				local oldX,oldZ = self.ai.maphst:PosToGrid(P)
+				if odlX ~= X or oldZ ~= Z then
+					self.losEnemy[id] = uPos
+					self:moveUnitCell(id,fromX,fromZ,toX,toZ)
+				end
+			end
 		end
 	end
+end
+
+function LosHST:scanRadar()
+	for id,P in pairs(self.radarEnemy) do
+		if not P then
+			self:insertUnitInCell()
+		else
+			local unit = game:GetUnitByID(id)
+			local uPos = unit:GetPosition()
+			if self.losEnemy[id] and self.radarEnemy[id] then
+				self:Warn('unit in los and in radar, with losStatus:' ,game:GetUnitLos(id))
+			elseif not  uPos or not unit:IsAlive()then
+				self:cleanEnemy(id)
+			else
+				local X,Z = self.ai.maphst:PosToGrid(uPos)
+				if X then
+					local oldX,oldZ = self.ai.maphst:PosToGrid(P)
+					if odlX ~= X or oldZ ~= Z then
+						self.losEnemy[id] = uPos
+						self:moveUnitCell(id,fromX,fromZ,toX,toZ)
+					end
+				end
+			end
+		end
+	end
+end
+
+function LosHST:scanOwnUnits()
 	for id,def in pairs(self.ownImmobile) do
 		local unit = game:GetUnitByID(id)
 		local uPos = unit:GetPosition()
@@ -60,9 +101,21 @@ function LosHST:Update()
 			self.ownImmobile[id] = nil
 		else
 			local X,Z = self.ai.maphst:PosToGrid(uPos)
-			self:setCellLos(self.OWN,unit,X,Z)
+			if X ~= oldX or Z ~= oldZ then
+				self:setCellLos(self.OWN,unit,X,Z)
+			end
 		end
 	end
+end
+
+function LosHST:Update()
+
+
+
+	if self.ai.schedulerhst.moduleTeam ~= self.ai.id or self.ai.schedulerhst.moduleUpdate ~= self:Name() then return end
+	self:scanLos()
+	self:scanRadar()
+
 	self:Draw()
 end
 
@@ -70,11 +123,13 @@ function LosHST:UnitEnteredLos(unitID, unitTeam, allyTeam, unitDefID)
 	if allyTeam ~= self.ai.allyId then
 		return
 	end
-	local los = game:GetUnitLos(unitID)
-	local unit = game:GetUnitByID(unitID)
-	local position = unit:GetPosition()
-	self:EchoDebug(	'ENTER LOS',los,unitID,unitTeam,allyTeam,unitDefID,UnitDefs[unitDefID].name)
-	self.losEnemy[unitID] = unitDefID
+	--local los = game:GetUnitLos(unitID)
+	--local unit = game:GetUnitByID(unitID)
+	--local position = unit:GetPosition()
+	--local X,Z = self.ai.maphst:PosToGrid(position)
+	self:EchoDebug(	'ENTER LOS',unitID,unitTeam,allyTeam,unitDefID,UnitDefs[unitDefID].name)
+	--self.losEnemy[unitID] = position --{X = X,Z = Z}
+	self.losEnemy[unitID] = false
 	self.radarEnemy[unitID] = nil
 end
 
@@ -82,45 +137,220 @@ function LosHST:UnitLeftLos(unitID, unitTeam, allyTeam, unitDefID)
 	if allyTeam ~= self.ai.allyId then
 		return
 	end
-	local los = game:GetUnitLos(unitID)
 	local unit = game:GetUnitByID(unitID)
 	local speed = UnitDefs[unitDefID].speed
-	if speed == 0  then
-		self.losEnemy[unitID] = unitDefID
-		self.radarEnemy[unitID] = nil
-	else
+	self:EchoDebug('LEFT LOS',unitID,unitTeam,allyTeam,unitDefID)
+	if speed ~= 0  then
+		--self.radarEnemy[unitID] = nil
+	--else
 		self.losEnemy[unitID] = nil
 	end
-	self:EchoDebug('LEFT LOS',los,unitID,unitTeam,allyTeam,unitDefID)
+
 end
 
 function LosHST:UnitEnteredRadar(unitID, unitTeam, allyTeam, unitDefID)
 	if allyTeam ~= self.ai.allyId then
 		return
 	end
-	local los = game:GetUnitLos(unitID)
-	local unit = game:GetUnitByID(unitID)
-	local isImmobile = UnitDefs[unitDefID].speed == 0
+	--local unit = game:GetUnitByID(unitID)
+	--local position = unit:GetPosition()
+	--local X,Z = self.ai.maphst:PosToGrid(position)
 	if not self.losEnemy[unitID] then
-		self.radarEnemy[unitID] = unitDefID
+		self.radarEnemy[unitID] = false--{X = X,Z = Z}
 	end
-	self:EchoDebug('ENTER RADAR',los,unitID,unitTeam,allyTeam,unitDefID)
+	self:EchoDebug('ENTER RADAR',unitID,unitTeam,allyTeam,unitDefID)
 end
 
 function LosHST:UnitLeftRadar(unitID, unitTeam, allyTeam, unitDefID)
 	if allyTeam ~= self.ai.allyId then
 		return
 	end
-	local los = game:GetUnitLos(unitID)
 	local unit = game:GetUnitByID(unitID)
-	local speed = UnitDefs[unitDefID].speed
 	self.radarEnemy[unitID] = nil
-	self:EchoDebug('LEFT RADAR',los,unitID,unitTeam,allyTeam,unitDefID)
+	self:EchoDebug('LEFT RADAR',unitID,unitTeam,allyTeam,unitDefID)
 end
 
+function LosHST:removeUnitFromGRID(ID,grid,X,Z,unitDefID)
+	if not self.ai.maphst:GridToPos(X,Z) then
+		self:Warn('try to remove ', unit:ID(), 'from cell',X,Z, 'cell not exist')
+		return
+	end
+	local CELL = grid[X][Z]
+	if not CELL.units[ID] then
+		self:Warn('try to remove',ID 'unit from'X,Z, 'but units is not here')
+		return
 
+	end
+	local M = CELL.units[ID]
+	local mobile = false
+
+
+	CELL.unitsCount = CELL.unitsCount - 1
+	CELL.metal = CELL.metal - M
+	if CELL.unitsCount > 0 then
+		CELL.metalMedia = CELL.metal / CELL.unitsCount
+	end
+	if ut.isWeapon then
+		CELL.ARMED = CELL.ARMED - M
+		if mobile  then
+			CELL.SOLDIERS = CELL.SOLDIERS - M
+			CELL.MOBILE = CELL.MOBILE - M
+			if layer == 0 then
+				CELL.armedGM = CELL.armedGM - M
+			elseif layer == 1 then
+				CELL.armedAM = CELL.armedAM - M
+			elseif layer == -1 then
+				CELL.armedSM = CELL.armedSM - M
+			end
+		else
+			CELL.TURRETS = CELL.TURRETS - M
+			CELL.IMMOBILE = CELL.IMMOBILE - M
+			if layer == 0 then
+				CELL.armedGI = CELL.armedGI - M
+			elseif layer == 1 then
+				CELL.armedAI = CELL.armedAI - M
+			elseif layer == -1 then
+				CELL.armedSI = CELL.armedSI - M
+			end
+		end
+
+	else
+		CELL.UNARM = CELL.UNARM - M
+		if mobile then
+			CELL.WORKERS = CELL.WORKERS - M
+			CELL.MOBILE = CELL.MOBILE - M
+			if layer > 0 then
+				CELL.unarmAM = CELL.unarmAM - M
+			elseif layer < 0  then
+				CELL.unarmSM = CELL.unarmSM - M
+			elseif layer == 0 then
+				CELL.unarmGM = CELL.unarmGM - M
+			end
+		else
+			CELL.BUILDINGS = CELL.BUILDINGS - M
+			CELL.IMMOBILE = CELL.IMMOBILE - M
+			if layer > 0 then
+				CELL.unarmAI = CELL.unarmAM - M
+			elseif layer < 0 then
+				CELL.unarmSI = CELL.unarmSM - M
+			elseif layer == 0 then
+				CELL.unarmGI = CELL.unarmGM - M
+			end
+		end
+	end
+
+	CELL.unarmG = CELL.unarmGM + CELL.unarmGI
+	CELL.unarmA = CELL.unarmAM + CELL.unarmAI
+	CELL.unarmS = CELL.unarmSM + CELL.unarmSI
+	CELL.armedG = CELL.armedGI + CELL.armedGM
+	CELL.armedA = CELL.armedAI + CELL.armedAM
+	CELL.armedS = CELL.armedSI + CELL.armedSM
+	CELL.G = CELL.armedG + CELL.unarmG
+	CELL.A = CELL.armedA + CELL.unarmA
+	CELL.S = CELL.armedS + CELL.unarmS
+	CELL.G_balance = CELL.armedG - CELL.unarmG
+	CELL.A_balance = CELL.armedA - CELL.unarmA
+	CELL.S_balance = CELL.armedS - CELL.unarmS
+	CELL.ENEMY = CELL.ARMED + CELL.UNARM --TOTAL VALUE
+	CELL.ENEMY_BALANCE = CELL.ARMED - CELL.UNARM
+	CELL.IM_balance = CELL.MOBILE - CELL.IMMOBILE
+end
+
+function LosHST:insertUnitInGRID(ID,grid,X,Z,unitDefID)
+	if not self.ai.maphst:GridToPos(X,Z) then
+		return
+	end
+
+	grid[X] = grid[X] or {}
+	grid[X][Z] = grid[X][Z] or self:setupCell(grid,X,Z)
+	local CELL = grid[X][Z]
+	local M = self.unitBaseMetalCost * game:Frame()
+	local unitName = unitDef.name
+	local speedX,speedY,speedZ, SPEED = Spring.GetUnitVelocity ( ID )
+	local mobile = false
+	local isWeapon = false
+	local layer = self:setPosLayer(unitName,uPos)
+	if unitDefID then
+		M = unitDefID.metalCost
+		mobile = ut.speed ~= 0
+		isWeapon = unitDefID["modCategories"]["weapon"]
+	else
+		mobile = SPEED ~= 0
+	end
+	CELL.units[ID] = M
+	CELL.unitsCount = CELL.unitsCount + 1
+	CELL.metal = CELL.metal + M
+	if CELL.unitsCount > 0 then
+		CELL.metalMedia = CELL.metal / CELL.unitsCount
+	end
+	if isWeapon then
+		CELL.ARMED = CELL.ARMED + M
+		if mobile  then
+			CELL.SOLDIERS = CELL.SOLDIERS + M
+			CELL.MOBILE = CELL.MOBILE + M
+			if layer == 0 then
+				CELL.armedGM = CELL.armedGM + M
+			elseif layer == 1 then
+				CELL.armedAM = CELL.armedAM + M
+			elseif layer == -1 then
+				CELL.armedSM = CELL.armedSM + M
+			end
+		else
+			CELL.TURRETS = CELL.TURRETS + M
+			CELL.IMMOBILE = CELL.IMMOBILE + M
+			if layer == 0 then
+				CELL.armedGI = CELL.armedGI + M
+			elseif layer == 1 then
+				CELL.armedAI = CELL.armedAI + M
+			elseif layer == -1 then
+				CELL.armedSI = CELL.armedSI + M
+			end
+		end
+
+	else
+		CELL.UNARM = CELL.UNARM + M
+		if mobile then
+			CELL.WORKERS = CELL.WORKERS + M
+			CELL.MOBILE = CELL.MOBILE + M
+			if layer > 0 then
+				CELL.unarmAM = CELL.unarmAM + M
+			elseif layer < 0  then
+				CELL.unarmSM = CELL.unarmSM + M
+			elseif layer == 0 then
+				CELL.unarmGM = CELL.unarmGM + M
+			end
+		else
+			CELL.BUILDINGS = CELL.BUILDINGS + M
+			CELL.IMMOBILE = CELL.IMMOBILE + M
+			if layer > 0 then
+				CELL.unarmAI = CELL.unarmAM + M
+			elseif layer < 0 then
+				CELL.unarmSI = CELL.unarmSM + M
+			elseif layer == 0 then
+				CELL.unarmGI = CELL.unarmGM + M
+			end
+		end
+	end
+
+	CELL.unarmG = CELL.unarmGM + CELL.unarmGI
+	CELL.unarmA = CELL.unarmAM + CELL.unarmAI
+	CELL.unarmS = CELL.unarmSM + CELL.unarmSI
+	CELL.armedG = CELL.armedGI + CELL.armedGM
+	CELL.armedA = CELL.armedAI + CELL.armedAM
+	CELL.armedS = CELL.armedSI + CELL.armedSM
+	CELL.G = CELL.armedG + CELL.unarmG
+	CELL.A = CELL.armedA + CELL.unarmA
+	CELL.S = CELL.armedS + CELL.unarmS
+	CELL.G_balance = CELL.armedG - CELL.unarmG
+	CELL.A_balance = CELL.armedA - CELL.unarmA
+	CELL.S_balance = CELL.armedS - CELL.unarmS
+	CELL.ENEMY = CELL.ARMED + CELL.UNARM --TOTAL VALUE
+	CELL.ENEMY_BALANCE = CELL.ARMED - CELL.UNARM
+	CELL.IM_balance = CELL.MOBILE - CELL.IMMOBILE
+end
 
 function LosHST:UnitDead(unit)--this is a bit cheat, we always know if a unit died but is not computability to track allways all dead unit and try it everytime
+
 	self:cleanEnemy(unit:ID())
 	self.ownImmobile[unit:ID()] = nil
 	self.ownMobile[unit:ID()] = nil
@@ -223,9 +453,9 @@ function LosHST:setupCell(grid,X,Z)--GAS are 3 layer. Unit of measure is usually
 	CELL.X = X
 	CELL.Z = Z
 	CELL.POS = self.ai.maphst.GRID[X][Z].POS --self.ai.maphst:GridToPos(X,Z)
-	CELL.metal = 0
-	CELL.units = {}--hold all the units
-	CELL.buildings = {}
+	CELL.M = 0 --total amount of metal in cell
+	CELL.unitsLOS = {}--hold all the units in LOS
+	CELL.unitsRADAR = {} --hold all units in RADAR
 	CELL.metalMedia = 0
 	CELL.unitsCount = 0
 
@@ -274,8 +504,7 @@ function LosHST:setupCell(grid,X,Z)--GAS are 3 layer. Unit of measure is usually
 	CELL.WORKERS = 0 -- mobile unarmed value in metal
 	CELL.MOBILE = 0 -- total amount of mobile units in metal
 	CELL.IMMOBILE = 0 --total amount of immobile units in metal
-	CELL.IM_balance = 0 -- mobile - immobile in metal
-	CELL.ENEMY = 0 --total amount of metal in cell
+	CELL.IM_BALANCE = 0 -- mobile - immobile in metal
 	CELL.ENEMY_BALANCE = 0 -- this is balanced SOLDIERS - TURRETS
 	CELL.SPEED = 0
 	return CELL
@@ -594,43 +823,43 @@ RADAR
 
 --[[int LuaSyncedRead::GetUnitLosState(lua_State* L)
 {
-    const CUnit* unit = ParseUnit(L, __func__, 1);
-    if (unit == nullptr)
-        return 0;
+	const CUnit* unit = ParseUnit(L, __func__, 1);
+	if (unit == nullptr)
+		return 0;
 
-    const int allyTeamID = GetEffectiveLosAllyTeam(L, 2);
-    unsigned short losStatus;
-    if (allyTeamID < 0) {
-        losStatus = (allyTeamID == CEventClient::AllAccessTeam) ? (LOS_ALL_MASK_BITS | LOS_ALL_BITS) : 0;
-    } else {
-        losStatus = unit->losStatus[allyTeamID];
-    }
+	const int allyTeamID = GetEffectiveLosAllyTeam(L, 2);
+	unsigned short losStatus;
+	if (allyTeamID < 0) {
+		losStatus = (allyTeamID == CEventClient::AllAccessTeam) ? (LOS_ALL_MASK_BITS | LOS_ALL_BITS) : 0;
+	} else {
+		losStatus = unit->losStatus[allyTeamID];
+	}
 
-    constexpr int currMask = LOS_INLOS   | LOS_INRADAR;
-    constexpr int prevMask = LOS_PREVLOS | LOS_CONTRADAR;
+	constexpr int currMask = LOS_INLOS   | LOS_INRADAR;
+	constexpr int prevMask = LOS_PREVLOS | LOS_CONTRADAR;
 
-    const bool isTyped = ((losStatus & prevMask) == prevMask);
+	const bool isTyped = ((losStatus & prevMask) == prevMask);
 
-    if (luaL_optboolean(L, 3, false)) {
-        // return a numeric value
-        if (!CLuaHandle::GetHandleFullRead(L))
-            losStatus &= ((prevMask * isTyped) | currMask);
+	if (luaL_optboolean(L, 3, false)) {
+		// return a numeric value
+		if (!CLuaHandle::GetHandleFullRead(L))
+			losStatus &= ((prevMask * isTyped) | currMask);
 
-        lua_pushnumber(L, losStatus);
-        return 1;
-    }
+		lua_pushnumber(L, losStatus);
+		return 1;
+	}
 
-    lua_createtable(L, 0, 3);
-    if (losStatus & LOS_INLOS) {
-        HSTR_PUSH_BOOL(L, "los", true);
-    }
-    if (losStatus & LOS_INRADAR) {
-        HSTR_PUSH_BOOL(L, "radar", true);
-    }
-    if ((losStatus & LOS_INLOS) || isTyped) {
-        HSTR_PUSH_BOOL(L, "typed", true);
-    }
-    return 1;
+	lua_createtable(L, 0, 3);
+	if (losStatus & LOS_INLOS) {
+		HSTR_PUSH_BOOL(L, "los", true);
+	}
+	if (losStatus & LOS_INRADAR) {
+		HSTR_PUSH_BOOL(L, "radar", true);
+	}
+	if ((losStatus & LOS_INLOS) || isTyped) {
+		HSTR_PUSH_BOOL(L, "typed", true);
+	}
+	return 1;
 }
 ugh this is nasty
 ok raw means it returns number instead of table
