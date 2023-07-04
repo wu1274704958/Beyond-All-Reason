@@ -406,7 +406,7 @@ function UpdateList(force)
 	widgetsList = {}
 	fullWidgetsList = {}
 	for name, data in pairs(widgetHandler.knownWidgets) do
-		if name ~= myName and name ~= 'Write customparam.__def to files' then
+		if name ~= myName and name ~= 'Write customparam.__def to files' and not data.fromZip then
 			if (not inputText or inputText == '') or (string.find(string.lower(name), string.lower(inputText), nil, true) or (data.desc and string.find(string.lower(data.desc), string.lower(inputText), nil, true)) or (data.basename and string.find(string.lower(data.basename), string.lower(inputText), nil, true)) or (data.author and string.find(string.lower(data.author), string.lower(inputText), nil, true))) then
 				fullWidgetsList[#fullWidgetsList+1] = { name, data }
 				-- look for the maxWidth
