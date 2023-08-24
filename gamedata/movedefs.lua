@@ -247,7 +247,7 @@ local moveDatas = {
 		crushstrength = 252,
 		footprintx = 4,
 		footprintz = 4,
-		maxslope = 22,
+		maxslope = 36,
 		slopeMod = 18,
 		maxwaterslope = 255,
 	},
