@@ -1741,6 +1741,18 @@ local options = {
         type    = "string",
         def     = "",
     },
+    {
+        key     = "live_game",
+        name    = "Live Game",
+        desc    = "live game mode type",
+        section = "dev",
+        type    = "list",
+        def     = "disabled",
+        items   = {
+            { key = "disabled", name = "Disabled", desc = "disabled" },
+            { key = "normal",   name = "Normal",   desc = "normal mode" },
+        }
+    },
 
 }
     ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
