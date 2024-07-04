@@ -124,6 +124,11 @@ if gadgetHandler:IsSyncedCode() then
 		draftMode = nil
 	end
 
+	if Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal" then
+		include("luarules/gadgets/live_game/game_initial_spawn.lua")
+		return;
+	end
+
 	----------------------------------------------------------------
 	-- Initialize
 	----------------------------------------------------------------
