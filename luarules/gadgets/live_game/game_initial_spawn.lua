@@ -1,5 +1,43 @@
 
 
+local spGetPlayerInfo = Spring.GetPlayerInfo
+local spGetTeamInfo = Spring.GetTeamInfo
+local spGetTeamRulesParam = Spring.GetTeamRulesParam
+local spSetTeamRulesParam = Spring.SetTeamRulesParam
+local spGetAllyTeamStartBox = Spring.GetAllyTeamStartBox
+local spCreateUnit = Spring.CreateUnit
+local spGetGroundHeight = Spring.GetGroundHeight
+------------------------------------------------------------
+-- Config
+----------------------------------------------------------------
+local startUnitParamName = 'startUnit'
+----------------------------------------------------------------
+-- Vars
+----------------------------------------------------------------
+local validStartUnits = {}
+local armcomDefID = UnitDefNames.armcom and UnitDefNames.armcom.id
+if armcomDefID then
+	validStartUnits[armcomDefID] = true
+end
+local corcomDefID = UnitDefNames.corcom and UnitDefNames.corcom.id
+if corcomDefID then
+	validStartUnits[corcomDefID] = true
+end
+local legcomDefID = UnitDefNames.legcom and UnitDefNames.legcom.id
+if legcomDefID then
+	validStartUnits[legcomDefID] = true
+end
+local teams = {} -- teams[teamID] = allyID
+local teamsCount
+-- each player gets to choose a faction
+local playerStartingUnits = {} -- playerStartingUnits[unitID] = unitDefID
+GG.playerStartingUnits = playerStartingUnits
+-- each team gets one startpos. if coop mode is on, extra startpoints are placed in GG.coopStartPoints by coop
+local teamStartPoints = {} -- teamStartPoints[teamID] = {x,y,z}
+GG.teamStartPoints = teamStartPoints
+local startPointTable = {}
+local startUnitList = {}
+
 function gadget:Initialize()
     Spring.SetLogSectionFilterLevel(gadget:GetInfo().name, LOG.INFO)
 
@@ -43,23 +81,13 @@ end
 
 
 function gadget:RecvLuaMsg(msg, playerID)
-    local startUnit = false
-    if string.sub(msg, 1, string.len("changeStartUnit")) == "changeStartUnit" then
-        startUnit = tonumber(msg:match(changeStartUnitRegex))
-    end
-    local _, _, playerIsSpec, playerTeam, allyTeamID = spGetPlayerInfo(playerID, false)
-    if startUnit and ((validStartUnits[startUnit] and faction_limiter_valid == false) or (faction_limited_options[ allyTeamID % #faction_limited_options + 1][startUnit] and faction_limiter_valid == true)) then
-        if not playerIsSpec then
-            playerStartingUnits[playerID] = startUnit
-            spSetTeamRulesParam(playerTeam, startUnitParamName, startUnit, { allied = true, public = false }) -- visible to allies only, set visible to all on GameStart
-            return true
-        end
-    end
 
     -- keep track of ready status gameside.
     -- sending ready status in GameSetup early prevents players from repositioning
     -- thus, the plan is to keep track of readystats gameside, and only send through GameSetup
     -- when everyone is ready
+    local _, _, playerIsSpec, playerTeam, allyTeamID = spGetPlayerInfo(playerID, false)
+
     if msg == "ready_to_start_game" then
         Spring.SetGameRulesParam("player_" .. playerID .. "_readyState", 1)
     end
@@ -101,7 +129,7 @@ function gadget:AllowStartPosition(playerID, teamID, readyState, x, y, z)
 end
 
 local function spawnStartUnit(teamID, x, z)
-
+    local startUnit = spGetTeamRulesParam(teamID, startUnitParamName)
     local y = spGetGroundHeight(x, z)
     local unitID = spCreateUnit(startUnit, x, y, z, 0, teamID)
     if unitID then
@@ -125,5 +153,12 @@ function gadget:GameStart()
         spawnStartUnit(teamID, beginX,beginY)
         beginX = beginX + 50
         beginY = beginY + 50
+    end
+end
+
+
+function gadget:GameFrame(n)
+    if n > 10 then
+        gadgetHandler:RemoveGadget(self)
     end
 end
