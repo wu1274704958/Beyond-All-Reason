@@ -266,7 +266,10 @@ local callInLists = {
 	"UnitLeftWater",
 	"UnitLeftAir",
 
-	"UnsyncedHeightMapUpdate"
+	"UnsyncedHeightMapUpdate",
+
+	--Live Game
+	"OnRecvLocalMsg"
 }
 
 
@@ -2246,6 +2249,16 @@ function gadgetHandler:Load(zip)
 		g:Load(zip)
 	end
 	return
+end
+
+--------------------------------------------------------------------------------
+--- LiveGame
+-----------------------------------------------------------------------------------
+
+function gadgetHandler:OnRecvLocalMsg(msg)
+	for _,g in ipairs(self.OnRecvLocalMsgList) do
+		g:OnRecvLocalMsg(msg)
+	end
 end
 
 --------------------------------------------------------------------------------
