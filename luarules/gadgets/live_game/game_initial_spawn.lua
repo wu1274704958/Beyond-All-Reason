@@ -15,11 +15,11 @@ local startUnitParamName = 'startUnit'
 -- Vars
 ----------------------------------------------------------------
 local validStartUnits = {}
-local armcomDefID = UnitDefNames.armcom and UnitDefNames.armcom.id
+local armcomDefID = UnitDefNames.armcom_lv and UnitDefNames.armcom_lv.id
 if armcomDefID then
 	validStartUnits[armcomDefID] = true
 end
-local corcomDefID = UnitDefNames.corcom and UnitDefNames.corcom.id
+local corcomDefID = UnitDefNames.corcom_lv and UnitDefNames.corcom_lv.id
 if corcomDefID then
 	validStartUnits[corcomDefID] = true
 end
@@ -41,6 +41,7 @@ local startUnitList = {}
 function gadget:Initialize()
     Spring.SetLogSectionFilterLevel(gadget:GetInfo().name, LOG.INFO)
 
+    Spring.InitLMCommCentral("TEST",4096);
     Spring.Log(gadget:GetInfo().name, LOG.INFO,"live game mode initialize")
 
     local gaiaTeamID = Spring.GetGaiaTeamID()
@@ -80,8 +81,33 @@ function gadget:Initialize()
 end
 
 
+
+local function ReSetupGame()
+    local mapConfig = include("luarules/configs/LiveGame/MapConfig.lua")[Game.mapName];
+    if mapConfig == nil then return end;
+
+    for i, u in pairs(startUnitList) do
+        local pos = mapConfig.pos[i - 1];
+        if pos ~= nil then
+            Spring.MoveCtrl.Enable(u.unitID)
+            Spring.SetUnitPosition(u.unitID, pos.x, pos.z);
+            Spring.MoveCtrl.Disable(u.unitID)
+        end
+    end
+
+    Spring.SetCameraState(mapConfig.camera_state)
+end
+
 function gadget:RecvLuaMsg(msg, playerID)
 
+    if msg == "live_resetup_game" then
+        ReSetupGame();
+        return;
+    end
+    -- if msg == "live_print_camera_state" then 
+    --     PrintCameraState()
+    --     return;
+    -- end
     -- keep track of ready status gameside.
     -- sending ready status in GameSetup early prevents players from repositioning
     -- thus, the plan is to keep track of readystats gameside, and only send through GameSetup
@@ -146,19 +172,54 @@ local function spawnStartUnit(teamID, x, z)
     -- team storage is set up by game_team_resources
 end
 
-function gadget:GameStart()
-    local beginX = 5;
-    local beginY = 5;
+
+local function SetupGame()
+    local mapConfig =  include("luarules/configs/LiveGame/MapConfig.lua")[Game.mapName];
+    if mapConfig == nil then return end;
+
+    local i = 0;
     for teamID, _ in pairs(teams) do
-        spawnStartUnit(teamID, beginX,beginY)
-        beginX = beginX + 50
-        beginY = beginY + 50
+        local pos = mapConfig.pos[i];
+        if pos ~= nil then
+            spawnStartUnit(teamID, pos.x,pos.z)
+        end
+        i = i + 1;
     end
+
+    Spring.SetCameraState(mapConfig.camera_state)
+end
+
+
+
+
+function gadget:GameStart()
+    SetupGame()
+    Spring.SendLocalMemMsg( { abc = 123, uuu = "hjsajh", arr = { IsArray = true, [0] = "哈喽",[1] = "小",[2] = "笨蛋" } } );
 end
 
 
 function gadget:GameFrame(n)
-    if n > 10 then
-        gadgetHandler:RemoveGadget(self)
+    -- if n > 30 then
+    --     gadgetHandler:RemoveGadget(self)
+    -- end
+end
+
+local function printTable(tab)
+    for key, val in pairs(tab) do
+        if type(val) == "table" then
+            Spring.Log(gadget:GetInfo().name, LOG.INFO,"recv msg table key = "..key)
+            printTable(val)
+        else
+            Spring.Log(gadget:GetInfo().name, LOG.INFO,"recv msg = "..key..' = '.. tostring(val))
+        end
     end
+end
+
+function gadget:OnRecvLocalMsg(msg)
+    printTable(msg);
+end
+
+function gadget:Shutdown()
+    Spring.ReleaseLMCommCentral();
+    Spring.Log(gadget:GetInfo().name,LOG.INFO,"Release local mem Comm Central!!!");
 end

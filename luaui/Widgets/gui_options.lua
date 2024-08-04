@@ -5594,6 +5594,24 @@ function init()
 			  Spring.SendCommands("water 4")
 		  end,
 		},
+		{ id = "ReSetup", group = "dev", category = types.dev, name = "ReSetup", type = "bool", value = false, description = "Re setup live game",
+		  onload = function(i)
+		  end,
+		  onchange = function(i, value)
+			Spring.SendLuaRulesMsg("live_resetup_game")
+		  end,
+		},
+		{ id = "PrintCameraState", group = "dev", category = types.dev, name = "PrintCameraState", type = "bool", value = false, description = "Print camera state",
+		  onload = function(i)
+		  end,
+		  onchange = function(i, value)
+			--Spring.SendLuaRulesMsg("live_print_camera_state")
+			local mapState = Spring.GetCameraState()
+			for key, val in pairs(mapState) do
+				Spring.Echo(string.format("camera state %s : %s",key,tostring(val)))
+			end
+		  end,
+		},
 		-- TODO add SetWaterParams:
 		--absorb = {number r, number g, number b},
 		--baseColor = {number r, number g, number b},
