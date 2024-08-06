@@ -1,4 +1,4 @@
-
+local Vec2 = VFS.Include("common/math/vec2.lua")
 
 local spGetPlayerInfo = Spring.GetPlayerInfo
 local spGetTeamInfo = Spring.GetTeamInfo
@@ -80,7 +80,20 @@ function gadget:Initialize()
 	end
 end
 
+local function setStartUnitDirection(index,posList)
+    local next = index + 1
+    if next > #startUnitList then
+        next = 1;
+    end
+    local nextPos = Vec2.Create(posList[next - 1].x,posList[next - 1].z);
+    local currPos = Vec2.Create(posList[index - 1].x,posList[index - 1].z);
 
+    nextPos:sub(currPos.x,currPos.y);
+    nextPos:normalize();
+
+    startUnitList[index].bornDir = nextPos;
+    Spring.SetUnitDirection(startUnitList[index].unitID,nextPos.x,0,nextPos.y);
+end
 
 local function ReSetupGame()
     local mapConfig = include("luarules/configs/LiveGame/MapConfig.lua")[Game.mapName];
@@ -91,6 +104,7 @@ local function ReSetupGame()
         if pos ~= nil then
             Spring.MoveCtrl.Enable(u.unitID)
             Spring.SetUnitPosition(u.unitID, pos.x, pos.z);
+            setStartUnitDirection(i,mapConfig.pos)
             Spring.MoveCtrl.Disable(u.unitID)
         end
     end
@@ -184,6 +198,10 @@ local function SetupGame()
             spawnStartUnit(teamID, pos.x,pos.z)
         end
         i = i + 1;
+    end
+
+    for idx, _ in pairs(startUnitList) do
+        setStartUnitDirection(idx,mapConfig.pos)
     end
 
     Spring.SetCameraState(mapConfig.camera_state)
