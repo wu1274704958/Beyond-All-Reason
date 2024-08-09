@@ -559,6 +559,12 @@ function gadgetHandler:NewGadget()
 			self.mouseOwner = nil
 		end
 	end
+	gh.LoadGadget = function (_,filename,overridevfsmode)
+		return self:LoadGadget(filename,overridevfsmode)
+	end
+	gh.InsertGadget = function (_,g)
+		return self:InsertGadget(g);
+	end
 
 	return gadget
 end
