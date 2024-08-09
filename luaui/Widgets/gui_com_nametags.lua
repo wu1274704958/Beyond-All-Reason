@@ -113,6 +113,7 @@ local spec = Spring.GetSpectatingState()
 local myTeamID = Spring.GetMyTeamID()
 local myPlayerID = Spring.GetMyPlayerID()
 local GaiaTeam = Spring.GetGaiaTeamID()
+local LiveGameEnable = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
 
 local comHeight = {}
 for unitDefID, defs in pairs(UnitDefs) do
@@ -480,6 +481,10 @@ function widget:DrawWorld()
 end
 
 function widget:Initialize()
+	if LiveGameEnable then
+		widgetHandler:RemoveWidget(self);
+		return;
+	end
 	WG.nametags = {}
 	WG.nametags.GetShowPlayerRank = function()
 		return showPlayerRank

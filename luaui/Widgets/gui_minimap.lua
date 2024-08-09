@@ -142,6 +142,14 @@ function widget:Initialize()
 end
 
 function widget:GameStart()
+	local LiveGameEnable = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
+	if LiveGameEnable then
+		clear()
+		gl.SlaveMiniMap(false)
+		gl.ConfigMiniMap(0,0,0,0);
+		widgetHandler:RemoveWidget(self);
+		return
+	end
 	widget:ViewResize()
 end
 

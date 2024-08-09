@@ -1,4 +1,6 @@
 local Vec2 = VFS.Include("common/math/vec2.lua")
+_G.Vec2 = Vec2;
+_G.Mat2 = VFS.Include("common/math/mat2.lua")
 
 local spGetPlayerInfo = Spring.GetPlayerInfo
 local spGetTeamInfo = Spring.GetTeamInfo
@@ -38,12 +40,17 @@ GG.teamStartPoints = teamStartPoints
 local startPointTable = {}
 local startUnitList = {}
 
-function gadget:Initialize()
-    Spring.SetLogSectionFilterLevel(gadget:GetInfo().name, LOG.INFO)
+local LiveGame = {
+    MapConfig = nil,
+    StartUnitList = nil
+}
 
+function gadget:Initialize()
+    _G.LiveGame = LiveGame;
+    Spring.SetLogSectionFilterLevel(gadget:GetInfo().name, LOG.INFO)
     Spring.InitLMCommCentral("TEST",4096);
     Spring.Log(gadget:GetInfo().name, LOG.INFO,"live game mode initialize")
-
+    gadget:addLiveGameGadgets()
     local gaiaTeamID = Spring.GetGaiaTeamID()
 	local teamList = Spring.GetTeamList()
 	for i = 1, #teamList do
@@ -105,6 +112,8 @@ local function ReSetupGame()
             Spring.MoveCtrl.Enable(u.unitID)
             Spring.SetUnitPosition(u.unitID, pos.x, pos.z);
             setStartUnitDirection(i,mapConfig.pos)
+            u.x = pos.x;
+            u.z = pos.z;
             Spring.MoveCtrl.Disable(u.unitID)
         end
     end
@@ -186,11 +195,10 @@ local function spawnStartUnit(teamID, x, z)
     -- team storage is set up by game_team_resources
 end
 
-
 local function SetupGame()
     local mapConfig =  include("luarules/configs/LiveGame/MapConfig.lua")[Game.mapName];
     if mapConfig == nil then return end;
-
+    LiveGame.MapConfig = mapConfig;
     local i = 0;
     for teamID, _ in pairs(teams) do
         local pos = mapConfig.pos[i];
@@ -207,20 +215,18 @@ local function SetupGame()
     Spring.SetCameraState(mapConfig.camera_state)
 end
 
-
-
-
 function gadget:GameStart()
     SetupGame()
-    Spring.SendLocalMemMsg( { abc = 123, uuu = "hjsajh", arr = { IsArray = true, [0] = "哈喽",[1] = "小",[2] = "笨蛋" } } );
+    LiveGame.StartUnitList = startUnitList;
+    Spring.SendLocalMemMsg( { cmd = "start" } );
 end
 
 
-function gadget:GameFrame(n)
-    -- if n > 30 then
-    --     gadgetHandler:RemoveGadget(self)
-    -- end
-end
+-- function gadget:GameFrame(n)
+--     if n == 5000 then
+--         Spring.Reload();
+--     end
+-- end
 
 local function printTable(tab)
     for key, val in pairs(tab) do
@@ -234,10 +240,48 @@ local function printTable(tab)
 end
 
 function gadget:OnRecvLocalMsg(msg)
-    printTable(msg);
+    if msg.cmd ~= nil then
+        if msg.cmd == "restart" then
+            Spring.Reload();
+        end
+    end
 end
 
 function gadget:Shutdown()
     Spring.ReleaseLMCommCentral();
     Spring.Log(gadget:GetInfo().name,LOG.INFO,"Release local mem Comm Central!!!");
+end
+
+function gadget:addLiveGameGadgets()
+    local VFSMODE = VFS.ZIP_ONLY -- FIXME: ZIP_FIRST ?
+    if Spring.IsDevLuaEnabled() then
+        VFSMODE = VFS.RAW_ONLY
+    end
+    local gadgetFiles = VFS.DirList("luarules/gadgets/live_game", "*.lua", VFSMODE)
+
+    local unsortedGadgets = {}
+    for _, gf in ipairs(gadgetFiles) do
+        -- filter self
+        if string.find(gf,"game_initial_spawn") == nil then
+            local gadget = gadgetHandler:LoadGadget(gf, VFSMODE)
+            if gadget then
+                table.insert(unsortedGadgets, gadget)
+            end
+        end
+	end
+
+    table.sort(unsortedGadgets, function(g1, g2)
+		local l1 = g1.ghInfo.layer
+		local l2 = g2.ghInfo.layer
+		if l1 ~= l2 then
+			return (l1 < l2)
+		end
+		local n1 = g1.ghInfo.name
+		local n2 = g2.ghInfo.name
+		return (n1 < n2)
+	end)
+
+    for _, g in ipairs(unsortedGadgets) do
+		gadgetHandler:InsertGadget(g)
+	end
 end

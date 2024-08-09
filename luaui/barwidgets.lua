@@ -360,6 +360,18 @@ function widgetHandler:Initialize()
 		end
 	end
 
+	local LiveGameEnable = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
+	if LiveGameEnable then
+		local widgetFiles = VFS.DirList(WIDGET_DIRNAME_MAP.."LiveGame/", "*.lua",VFS.ZIP)
+		for k, wf in ipairs(widgetFiles) do
+			local widget = self:LoadWidget(wf, true)
+			if widget then
+				table.insert(unsortedWidgets, widget)
+				Yield()
+			end
+		end
+	end
+
 	-- sort the widgets
 	table.sort(unsortedWidgets, function(w1, w2)
 		local l1 = w1.whInfo.layer

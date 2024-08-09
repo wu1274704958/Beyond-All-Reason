@@ -5612,6 +5612,13 @@ function init()
 			end
 		  end,
 		},
+		{ id = "TestBuildTower", group = "dev", category = types.dev, name = "TestBuildTower", type = "bool", value = false, description = "Print camera state",
+		  onload = function(i)
+		  end,
+		  onchange = function(i, value)
+			Spring.SendLuaRulesMsg("live_test_build_tower")
+		  end,
+		},
 		-- TODO add SetWaterParams:
 		--absorb = {number r, number g, number b},
 		--baseColor = {number r, number g, number b},

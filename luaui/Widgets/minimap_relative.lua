@@ -53,6 +53,13 @@ yoff = math.floor(yoff)
 --------------------------------------------------------------------------------
 
 function widget:Initialize()
+
+  local LiveGameEnable = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
+  if LiveGameEnable then
+    widgetHandler:RemoveWidget(widget);
+		return
+	end
+
   widget:ViewResize(widgetHandler:GetViewSizes())
 end
 
