@@ -29,6 +29,11 @@ local legcomDefID = UnitDefNames.legcom and UnitDefNames.legcom.id
 if legcomDefID then
 	validStartUnits[legcomDefID] = true
 end
+
+local cordoomDefID = UnitDefNames.cordoom_lv and UnitDefNames.cordoom_lv.id
+if cordoomDefID then
+	validStartUnits[cordoomDefID] = true
+end
 local teams = {} -- teams[teamID] = allyID
 local teamsCount
 -- each player gets to choose a faction
@@ -66,8 +71,11 @@ function gadget:Initialize()
 			elseif teamSide == 'legion' then
 				comDefID = legcomDefID
 			end
-            
-			spSetTeamRulesParam(teamID, startUnitParamName, comDefID, { allied = true, public = false })
+
+            if validStartUnits[cordoomDefID] then
+                comDefID = cordoomDefID;
+            end
+            spSetTeamRulesParam(teamID, startUnitParamName, comDefID, { allied = true, public = false })
 			teams[teamID] = teamAllyID
 		end
 	end

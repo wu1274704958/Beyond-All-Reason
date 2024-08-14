@@ -40,6 +40,7 @@ Spring.SendCommands({
 })
 
 local allowuserwidgets = Spring.GetModOptions().allowuserwidgets
+local isEnableLiveGame = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
 
 local anonymousMode = Spring.GetModOptions().teamcolors_anonymous_mode
 if anonymousMode ~= "disabled" then
@@ -360,8 +361,7 @@ function widgetHandler:Initialize()
 		end
 	end
 
-	local LiveGameEnable = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
-	if LiveGameEnable then
+	if isEnableLiveGame then
 		local widgetFiles = VFS.DirList(WIDGET_DIRNAME_MAP.."LiveGame/", "*.lua",VFS.ZIP)
 		for k, wf in ipairs(widgetFiles) do
 			local widget = self:LoadWidget(wf, true)
@@ -598,6 +598,9 @@ function widgetHandler:NewWidget()
 	local self = self
 	widget.include = function(f)
 		return include(f, widget)
+	end
+	wh.IsEnableLiveGame = function()
+		return isEnableLiveGame
 	end
 	wh.RaiseWidget = function(_)
 		self:RaiseWidget(widget)

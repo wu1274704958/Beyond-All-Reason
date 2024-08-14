@@ -150,6 +150,10 @@ unitCollisionVolume['cordoom'] = {
 	on={63,112,63,0,0,0,1,1,1},
 	off={45,87,45,0,-12,0,2,1,0},
 }
+unitCollisionVolume['cordoom_lv'] = {
+	on={126,224,126,0,0,0,1,1,1},
+	off={90,174,90,0,-12,0,2,1,0},
+}
 unitCollisionVolume['cordoomt3'] = {
 	on={95,168,95,0,18,0,2,1,1},
 	off={68,131,68,0,0,0,3,1,0},
@@ -172,7 +176,7 @@ unitCollisionVolume['legsolar'] = {
 
 for name, v in pairs(unitCollisionVolume) do
 	for udid, ud in pairs(UnitDefs) do
-		if string.find(ud.name, name) then
+		if ud.name == name then
 			unitCollisionVolume[ud.name] = v
 		end
 	end

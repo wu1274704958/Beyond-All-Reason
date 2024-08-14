@@ -112,6 +112,10 @@ function widget:ViewResize()
 end
 
 function widget:Initialize()
+	if widgetHandler:IsEnableLiveGame() then
+		widgetHandler:RemoveWidget(self);
+		return
+	end
 	oldMinimapGeometry = Spring.GetMiniMapGeometry()
 	gl.SlaveMiniMap(true)
 
@@ -142,14 +146,7 @@ function widget:Initialize()
 end
 
 function widget:GameStart()
-	local LiveGameEnable = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
-	if LiveGameEnable then
-		clear()
-		gl.SlaveMiniMap(false)
-		gl.ConfigMiniMap(0,0,0,0);
-		widgetHandler:RemoveWidget(self);
-		return
-	end
+	
 	widget:ViewResize()
 end
 
@@ -157,7 +154,7 @@ function widget:Shutdown()
 	clear()
 	gl.SlaveMiniMap(false)
 
-	if not dualscreenMode then
+	if not dualscreenMode and oldMinimapGeometry ~= nil then
 		Spring.SendCommands("minimap geometry " .. oldMinimapGeometry)
 	end
 end

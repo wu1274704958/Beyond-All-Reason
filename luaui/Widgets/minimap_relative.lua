@@ -53,18 +53,20 @@ yoff = math.floor(yoff)
 --------------------------------------------------------------------------------
 
 function widget:Initialize()
-
-  local LiveGameEnable = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
-  if LiveGameEnable then
-    widgetHandler:RemoveWidget(widget);
-		return
-	end
-
   widget:ViewResize(widgetHandler:GetViewSizes())
 end
 
+if widgetHandler:IsEnableLiveGame() then
+  function widget:GameStart()
+    gl.ConfigMiniMap(0,0,0,0);
+  end
+end
 
 function widget:ViewResize(viewSizeX, viewSizeY)
+
+  if widgetHandler:IsEnableLiveGame() then
+    gl.ConfigMiniMap(0,0,0,0);
+	end
   -- the extra 2 pixels are for the minimap border
   local xp = math.floor(viewSizeX * xmax) - xoff - 2
   local yp = math.floor(viewSizeY * ymax) - yoff - 2

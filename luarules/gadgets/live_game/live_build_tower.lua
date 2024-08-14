@@ -36,7 +36,10 @@ end
 function gadget:OnRecvLocalMsg(msg)
     if Start and msg.cmd ~= nil then
         if msg.cmd == "join" then
-            self:AddTower(msg.args);
+            local data = self:AddTower(msg.args);
+            if data ~= nil then
+                self:ShowPlayerName(data)
+            end
         end
     end
 end
@@ -70,7 +73,7 @@ function gadget:AddTower(args)
 
     local name = args.Name;
     if name == nil then
-        name = string.format("name_%d_%d",startUnit.teamID,index);
+        name = string.format("哈哈哈_%d_%d",startUnit.teamID,index);
     end
 
     local y = spGetGroundHeight(pos.x, pos.y)
@@ -85,6 +88,18 @@ function gadget:AddTower(args)
         Id = args.Id,
         UnitId = unitID
     }
+
+    return UserData[args.Group + 1][index + 1]
+end
+
+function gadget:ShowPlayerName(data)
+    local msg = {
+        id = data.Id,
+        name = data.Name,
+        unitId = data.UnitId,
+    }
+    local textMsg = "ShowLivePlayerName"..Json.encode(msg);
+    Spring.SendLuaUIMsg(textMsg)
 end
 
 function gadget:RemoveAllTower()
@@ -100,8 +115,11 @@ function gadget:RecvLuaMsg(msg,playerId)
     if msg == "live_test_build_tower" then
         self:RemoveAllTower();
         LiveGame.MapConfig = include("luarules/configs/LiveGame/MapConfig.lua")[Game.mapName];
-        for i=0,60 do
-            self:AddTower({ Group = i % 2})
+        for i=1,60 do
+            local data = self:AddTower({ Group = i % 2 , Id = i})
+            if data ~= nil then
+                self:ShowPlayerName(data)
+            end
         end
     end
 end

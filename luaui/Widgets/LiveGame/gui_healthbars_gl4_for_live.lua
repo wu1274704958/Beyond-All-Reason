@@ -1,6 +1,6 @@
 function widget:GetInfo()
    return {
-      name      = "Health Bars GL4",
+      name      = "Health Bars GL4 For Live",
       desc      = "Yes this healthbars, just gl4",
       author    = "Beherith",
       date      = "October 2019",
@@ -217,7 +217,7 @@ local barTypeMap = { -- WHERE SHOULD WE STORE THE FUCKING COLORS?
 		mincolor = {1.0, 0.0, 0.0, 1.0},
 		maxcolor = {0.0, 1.0, 0.0, 1.0},
 		--bartype = 0,
-		bartype = bitPercentage + bitColorCorrect,
+		bartype = bitColorCorrect,
 		hidethreshold = 0.99,
 		uniformindex = 32, -- if its >20, then its health/maxhealth
 		uvoffset = 0.0625, -- the X offset of the icon for this bar
@@ -340,6 +340,9 @@ for barname, bt in pairs(barTypeMap) do
 	bt['cache'] = cache
 end
 
+local ShowHealthBarUnitMap = {
+	["cordoom_lv"] = true
+}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -421,7 +424,7 @@ local shaderConfig = { -- these are our shader defines
 	BARHEIGHT = barHeight,
 	BGBOTTOMCOLOR = "vec4(0.25, 0.25, 0.25, 0.8)",
 	BGTOPCOLOR = "vec4(0.1, 0.1, 0.1, 0.8)",
-	BARSCALE = 4.0,
+	BARSCALE = 20.0,
 	PERCENT_VISIBILITY_MAX = 0.99,
 	TIMER_VISIBILITY_MIN = 0.0,
 	BARSTEP = 10, -- pixels to downshift per new bar
@@ -676,7 +679,9 @@ local function addBarsForUnit(unitID, unitDefID, unitTeam, unitAllyTeam, reason)
 			local ux, uy, uz = Spring.GetUnitPosition(unitID)
 			Spring.MarkerAddPoint(ux, uy, uz, "health")
 		end
-		addBarForUnit(unitID, unitDefID, "health", reason)
+		if ShowHealthBarUnitMap[UnitDefs[unitDefID].name] ~= nil then
+			addBarForUnit(unitID, unitDefID, "health", reason)
+		end
 	end
 	if unitDefhasShield[unitDefID] then
 		--Spring.Echo("hasshield")
@@ -931,7 +936,7 @@ local function ProjectileCreatedReloadHB(projectileID, unitID, weaponID, unitDef
 end
 
 function widget:Initialize()
-	if  widgetHandler:IsEnableLiveGame() or not gl.CreateShader then -- no shader support, so just remove the widget itself, especially for headless
+	if not gl.CreateShader then -- no shader support, so just remove the widget itself, especially for headless
 		widgetHandler:RemoveWidget()
 		return
 	end
