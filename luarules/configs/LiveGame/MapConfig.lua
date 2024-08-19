@@ -52,13 +52,12 @@ local function GetNextPosFuncDef(originPos,forward,index,group,op)
 
  local function GetTowerUnitByTypeDef(type,group)
      if type == nil then
-         return group == 0 and "cordoom" or "corvipe"
+          return "armllt" --return group == 0 and "cordoom" or "corvipe"
      elseif type == 1 then
           return "armrl"
      elseif type == 0 then 
           return "armllt"
      end
-
  end
 
 return {

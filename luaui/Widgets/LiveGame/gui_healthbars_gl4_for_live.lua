@@ -683,64 +683,65 @@ local function addBarsForUnit(unitID, unitDefID, unitTeam, unitAllyTeam, reason)
 			addBarForUnit(unitID, unitDefID, "health", reason)
 		end
 	end
-	if unitDefhasShield[unitDefID] then
-		--Spring.Echo("hasshield")
-		addBarForUnit(unitID, unitDefID, "shield", reason)
-		unitShieldWatch[unitID] = -1.0
-	end
 
-	updateReloadBar(unitID, unitDefID, reason)
+	-- if unitDefhasShield[unitDefID] then
+	-- 	--Spring.Echo("hasshield")
+	-- 	addBarForUnit(unitID, unitDefID, "shield", reason)
+	-- 	unitShieldWatch[unitID] = -1.0
+	-- end
 
-	if health ~= nil then
-		if build < 1 then
-			addBarForUnit(unitID, unitDefID, "building", reason)
-			unitBeingBuiltWatch[unitID] = build
-			uniformcache[1] = build
-			gl.SetUnitBufferUniforms(unitID, uniformcache, 0)
-		else
-			uniformcache[1] = -1.0 -- mean that the unit has been built, we init it to -1 always
-			gl.SetUnitBufferUniforms(unitID, uniformcache, 0)
-		end
-		--Spring.Echo(unitID, unitDefID, unitDefCanStockpile[unitDefID])
-		if debugmode then
-			if unitDefCanStockpile[unitDefID] then
-				Spring.Echo("unitDefCanStockpile", unitAllyTeam, myAllyTeamID, fullview)
-			end
+	-- updateReloadBar(unitID, unitDefID, reason)
 
-		end
+	-- if health ~= nil then
+	-- 	if build < 1 then
+	-- 		addBarForUnit(unitID, unitDefID, "building", reason)
+	-- 		unitBeingBuiltWatch[unitID] = build
+	-- 		uniformcache[1] = build
+	-- 		gl.SetUnitBufferUniforms(unitID, uniformcache, 0)
+	-- 	else
+	-- 		uniformcache[1] = -1.0 -- mean that the unit has been built, we init it to -1 always
+	-- 		gl.SetUnitBufferUniforms(unitID, uniformcache, 0)
+	-- 	end
+	-- 	--Spring.Echo(unitID, unitDefID, unitDefCanStockpile[unitDefID])
+	-- 	if debugmode then
+	-- 		if unitDefCanStockpile[unitDefID] then
+	-- 			Spring.Echo("unitDefCanStockpile", unitAllyTeam, myAllyTeamID, fullview)
+	-- 		end
 
-		if unitDefCanStockpile[unitDefID] and ((unitAllyTeam == myAllyTeamID) or fullview) then
-			unitStockPileWatch[unitID] = 0.0
-			addBarForUnit(unitID, unitDefID, "stockpile", reason)
-		end
-		if  capture > 0 then
-			addBarForUnit(unitID, unitDefID, "capture", reason)
-			uniformcache[1] = capture
-			gl.SetUnitBufferUniforms(unitID, uniformcache, 5)
-			unitCaptureWatch[unitID] = capture
-		end
+	-- 	end
 
-		if paralyzeDamage > 0 then
-			--TODO
+	-- 	if unitDefCanStockpile[unitDefID] and ((unitAllyTeam == myAllyTeamID) or fullview) then
+	-- 		unitStockPileWatch[unitID] = 0.0
+	-- 		addBarForUnit(unitID, unitDefID, "stockpile", reason)
+	-- 	end
+	-- 	if  capture > 0 then
+	-- 		addBarForUnit(unitID, unitDefID, "capture", reason)
+	-- 		uniformcache[1] = capture
+	-- 		gl.SetUnitBufferUniforms(unitID, uniformcache, 5)
+	-- 		unitCaptureWatch[unitID] = capture
+	-- 	end
 
-			if Spring.GetUnitIsStunned(unitID) then
-				if unitParalyzedWatch[unitID] == nil then  -- already paralyzed
-					unitParalyzedWatch[unitID] = 0.0
-					-- if unit was already empd, remove that bar
-					if unitEmpDamagedWatch[unitID] then
-						unitEmpDamagedWatch[unitID] = nil
-						removeBarFromUnit(unitID, 'emp_damage', 'unitEmpDamagedWatch')
-					end
-					addBarForUnit(unitID, unitDefID, "paralyzed", reason)
-				end
-			else
-				if unitEmpDamagedWatch[unitID] == nil then
-					unitEmpDamagedWatch[unitID] = 0.0
-					addBarForUnit(unitID, unitDefID, "emp_damage", reason)
-				end
-			end
-		end
-	end
+	-- 	if paralyzeDamage > 0 then
+	-- 		--TODO
+
+	-- 		if Spring.GetUnitIsStunned(unitID) then
+	-- 			if unitParalyzedWatch[unitID] == nil then  -- already paralyzed
+	-- 				unitParalyzedWatch[unitID] = 0.0
+	-- 				-- if unit was already empd, remove that bar
+	-- 				if unitEmpDamagedWatch[unitID] then
+	-- 					unitEmpDamagedWatch[unitID] = nil
+	-- 					removeBarFromUnit(unitID, 'emp_damage', 'unitEmpDamagedWatch')
+	-- 				end
+	-- 				addBarForUnit(unitID, unitDefID, "paralyzed", reason)
+	-- 			end
+	-- 		else
+	-- 			if unitEmpDamagedWatch[unitID] == nil then
+	-- 				unitEmpDamagedWatch[unitID] = 0.0
+	-- 				addBarForUnit(unitID, unitDefID, "emp_damage", reason)
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
 end
 
 local function removeBarsFromUnit(unitID, reason)

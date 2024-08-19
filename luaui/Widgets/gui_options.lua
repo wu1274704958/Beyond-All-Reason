@@ -655,7 +655,7 @@ function DrawWindow()
 	local column = 1
 	local drawColumnPos = 1
 
-	maxColumnRows = math.ceil((y - yPosMax + oPadding) / (oHeight + oPadding + oPadding))
+	maxColumnRows = math.floor((y - yPosMax - oPadding - oPadding) / (oHeight + oPadding + oPadding))
 	local numOptions = #options
 
 	local dontFilterGroup = false
@@ -5594,17 +5594,16 @@ function init()
 			  Spring.SendCommands("water 4")
 		  end,
 		},
-		{ id = "ReSetup", group = "dev", category = types.dev, name = "ReSetup", type = "bool", value = false, description = "Re setup live game",
-		  onload = function(i)
-		  end,
-		  onchange = function(i, value)
+
+		{ id = "label_dev_live", group = "dev", name = "Live", category = types.dev },
+		{ id = "label_dev_live_spacer", group = "dev", category = types.dev },
+		{ id = "live_ReSetup", group = "dev", category = types.dev, name = "ReSetup", type = "click", value = false, description = "Re setup live game",
+		  onclick = function()
 			Spring.SendLuaRulesMsg("live_resetup_game")
 		  end,
 		},
-		{ id = "PrintCameraState", group = "dev", category = types.dev, name = "PrintCameraState", type = "bool", value = false, description = "Print camera state",
-		  onload = function(i)
-		  end,
-		  onchange = function(i, value)
+		{ id = "live_PrintCameraState", group = "dev", category = types.dev, name = "PrintCameraState", type = "click", value = false, description = "Print camera state",
+		  onclick = function()
 			--Spring.SendLuaRulesMsg("live_print_camera_state")
 			local mapState = Spring.GetCameraState()
 			for key, val in pairs(mapState) do
@@ -5612,11 +5611,14 @@ function init()
 			end
 		  end,
 		},
-		{ id = "TestBuildTower", group = "dev", category = types.dev, name = "TestBuildTower", type = "bool", value = false, description = "Print camera state",
-		  onload = function(i)
-		  end,
-		  onchange = function(i, value)
+		{ id = "live_TestBuildTower", group = "dev", category = types.dev, name = "TestBuildTower", type = "click", value = false, description = "Test build tower",
+		  onclick = function()
 			Spring.SendLuaRulesMsg("live_test_build_tower")
+		  end,
+		},
+		{ id = "live_TestSpawnSquad", group = "dev", category = types.dev, name = "TestSpawnSquad", type = "click", value = false, description = "Test spawn squad",
+		  onclick = function()
+			Spring.SendLuaRulesMsg("live_test_spawn_squad")
 		  end,
 		},
 		-- TODO add SetWaterParams:

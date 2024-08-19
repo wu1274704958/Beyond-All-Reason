@@ -13,16 +13,24 @@ end
 local LiveGame = nil;
 local Start = false;
 local UserData = {}
+local UserMap = {}
 
 local Vec2 = _G.Vec2;
-local Mat2 = _G.Mat2;
 
 local spCreateUnit = Spring.CreateUnit
 local spGetGroundHeight = Spring.GetGroundHeight
 local spDestroyUnit = Spring.DestroyUnit
+local spAppendUnitCategory = Spring.AppendUnitCategory
+local spSetUnitDirection = Spring.SetUnitDirection
+local spSetUnitMaxHealth = Spring.SetUnitMaxHealth;
+local spSetUnitHealth = Spring.SetUnitHealth;
+
+local TowerHp = 88889999;
 
 function gadget:Initialize()
     LiveGame = _G.LiveGame;
+    LiveGame.UserData = UserData;
+    LiveGame.UserMap = UserMap;
     Spring.SetLogSectionFilterLevel(gadget:GetInfo().name, LOG.INFO)
     Spring.Echo("build tower init")
 end
@@ -80,16 +88,25 @@ function gadget:AddTower(args)
     local getTowerFunc = LiveGame.MapConfig.GetTowerUnitByType or GetUnitByType;
     local unitID = spCreateUnit(getTowerFunc(args.Type,args.Group), pos.x, y, pos.y, 0, startUnit.teamID)
 
-    Spring.SetUnitDirection(unitID,startUnit.bornDir.x,0,startUnit.bornDir.y);
+    spSetUnitDirection(unitID,startUnit.bornDir.x,0,startUnit.bornDir.y);
+    spAppendUnitCategory(unitID,"LVNOCHASE");
+    spSetUnitMaxHealth(unitID,TowerHp);
+    spSetUnitHealth(unitID,TowerHp);
 
-    UserData[args.Group + 1][index + 1] = {
+    local user = {
         Pos = pos,
         Name = name,
         Id = args.Id,
-        UnitId = unitID
-    }
+        UnitId = unitID,
+        Group = args.Group,
+        Index = index
+    };
 
-    return UserData[args.Group + 1][index + 1]
+    UserData[args.Group + 1][index + 1] = user;
+
+    UserMap[args.Id] = user;
+
+    return user;
 end
 
 function gadget:ShowPlayerName(data)
@@ -109,6 +126,9 @@ function gadget:RemoveAllTower()
         end
     end
     UserData = {}
+    UserMap = {}
+    LiveGame.UserData = UserData;
+    LiveGame.UserMap = UserMap;
 end
 
 function gadget:RecvLuaMsg(msg,playerId)
