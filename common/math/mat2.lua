@@ -37,5 +37,12 @@ Mat2.FromRotate = function(angle)
     );
 end
 
+Mat2.FromRotateRad = function(rad)
+    return Mat2.Create(
+        math.cos(rad), -math.sin(rad),
+        math.sin(rad),  math.cos(rad)
+    );
+end
+
 
 return Mat2

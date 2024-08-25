@@ -57,6 +57,10 @@ local function GetNextPosFuncDef(originPos,forward,index,group,op)
           return "armrl"
      elseif type == 0 then 
           return "armllt"
+     elseif type == 31 then
+          return "armcir"
+     elseif type == 30 then 
+          return "armhlt"
      end
  end
 
@@ -107,7 +111,7 @@ return {
                dy = -0.8568887,
                dz = -0.5155014,
                angle = 300,
-               dist = 2375.36841
+               dist = 2350.36841
           },
           GetNextPosFunc = GetNextPosFuncDef,
           GetTowerUnitByType = GetTowerUnitByTypeDef

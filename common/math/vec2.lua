@@ -16,6 +16,12 @@ Vec2.Create = function (x,y)
                 return "Vec2";
             end
             return nil;
+        end,
+        __add = function (a,b)
+            return Vec2.Create(a.x + b.x,a.y + b.y)
+        end,
+        __sub = function (a,b)
+            return Vec2.Create(a.x - b.x,a.y - b.y)
         end
     }
 

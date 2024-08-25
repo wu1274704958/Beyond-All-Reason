@@ -24,6 +24,7 @@ local spAppendUnitCategory = Spring.AppendUnitCategory
 local spSetUnitDirection = Spring.SetUnitDirection
 local spSetUnitMaxHealth = Spring.SetUnitMaxHealth;
 local spSetUnitHealth = Spring.SetUnitHealth;
+local spSetUnitInvincible = Spring.SetUnitInvincible;
 
 local TowerHp = 88889999;
 
@@ -90,8 +91,7 @@ function gadget:AddTower(args)
 
     spSetUnitDirection(unitID,startUnit.bornDir.x,0,startUnit.bornDir.y);
     spAppendUnitCategory(unitID,"LVNOCHASE");
-    spSetUnitMaxHealth(unitID,TowerHp);
-    spSetUnitHealth(unitID,TowerHp);
+    spSetUnitInvincible(unitID,-1)
 
     local user = {
         Pos = pos,

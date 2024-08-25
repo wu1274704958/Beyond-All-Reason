@@ -44,6 +44,7 @@ local teamStartPoints = {} -- teamStartPoints[teamID] = {x,y,z}
 GG.teamStartPoints = teamStartPoints
 local startPointTable = {}
 local startUnitList = {}
+local waitNotifyUnitDestroy = {}
 
 local LiveGame = {
     MapConfig = nil,
@@ -230,12 +231,6 @@ function gadget:GameStart()
 end
 
 
--- function gadget:GameFrame(n)
---     if n == 5000 then
---         Spring.Reload();
---     end
--- end
-
 local function printTable(tab)
     for key, val in pairs(tab) do
         if type(val) == "table" then
@@ -292,4 +287,56 @@ function gadget:addLiveGameGadgets()
     for _, g in ipairs(unsortedGadgets) do
 		gadgetHandler:InsertGadget(g)
 	end
+end
+
+function gadget:CheckGameOver()
+    local liveCount = 0;
+    local liveIndex = 0;
+    for i, v in ipairs(startUnitList) do
+        if not (v.failed or false) then
+            liveCount = liveCount + 1;
+            liveIndex = i
+        end
+    end
+    if liveCount == 1 and liveIndex > 0 then
+        Spring.SendLocalMemMsg( { cmd = "end",args = { winner = liveIndex - 1 }} )
+        Spring.SendCommands({"pause 1"})
+        return true
+    end
+    return false
+end
+
+function gadget:UnitDestroyed(unitID,unitDefID,teamID)
+    local group = 0
+    for i, v in ipairs(startUnitList) do
+        if v.unitID == unitID then
+            v.failed = true;
+            self:CheckGameOver();
+            return
+        end
+        if teamID == v.teamID then
+            group = i;
+        end
+    end
+    if group > 0 then
+        if waitNotifyUnitDestroy[group] == nil then
+            waitNotifyUnitDestroy[group] = 0
+        end
+        waitNotifyUnitDestroy[group] = waitNotifyUnitDestroy[group] + 1;
+    end
+end
+
+function gadget:NotifyUnitDestroyed(n)
+    if n % 30 == 0 then
+        for i, v in ipairs(waitNotifyUnitDestroy) do
+            if v > 0 then
+                Spring.SendLocalMemMsg( { cmd = "unitDestroyed",args = { count = v }} )
+                waitNotifyUnitDestroy[i] = 0;
+            end
+        end
+    end
+end
+
+function gadget:GameFrame(n)
+    self:NotifyUnitDestroyed(n);
 end

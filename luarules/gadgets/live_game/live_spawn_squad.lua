@@ -10,6 +10,7 @@ function gadget:GetInfo()
 	}
 end
 local Vec2 = _G.Vec2;
+local Mat2 = _G.Mat2;
 local LiveGame = nil;
 local spCreateUnit = Spring.CreateUnit;
 local spSetUnitTarget = Spring.SetUnitTarget;
@@ -70,12 +71,41 @@ function gadget:GetTargetPos(target,op)
     return { startUnit.x, startUnit.y, startUnit.z }
 end
 
-function gadget:SpawnSquadReal(res,pos,unit,count,user,op)
-    local y = spGetGroundHeight(pos.x,pos.y);
-    local startUnit = LiveGame.StartUnitList[user.Group + 1];
+local function GetNextPosFuncDef(originPos,forward,index,r,cxt)
+
+    if index == 0 then return originPos end
+    
+    local lastOffX = cxt.lastOffX or r * 2;
+    local indexOfRow = cxt.indexOfRow or 0;
+
+    if cxt.countOfRow == nil then
+        cxt.angle = (math.asin(r / lastOffX) * 2) * 57.29577951;
+        cxt.countOfRow = 360 / cxt.angle;
+    end
+
+    local mat = Mat2.FromRotate( cxt.angle *  indexOfRow);
+
+    local dir = mat * forward;
+    local pos = originPos + (dir * lastOffX);
+
+    if indexOfRow + 1 >= cxt.countOfRow then
+        cxt.lastOffX = lastOffX + r * 2;
+        cxt.indexOfRow = 0;
+        cxt.countOfRow = nil;
+    else
+        cxt.indexOfRow = indexOfRow + 1;
+    end
+
+    return pos;
+end
+
+function gadget:SpawnSquadReal(res,b,radius,bornDir,bornPos,unit,count,teamID,op,calcPosCxt)
+    
     for i = 1,count do
-        local unitId = spCreateUnit(unit,pos.x,y,pos.y,0,startUnit.teamID);
-        spSetUnitDirection(unitId,startUnit.bornDir.x,0,startUnit.bornDir.y);
+        local pos = GetNextPosFuncDef(bornPos,bornDir,b + (i - 1),radius,calcPosCxt);
+        local y = spGetGroundHeight(pos.x,pos.y);
+        local unitId = spCreateUnit(unit,pos.x,y,pos.y,0,teamID);
+        spSetUnitDirection(unitId,bornDir.x,0,bornDir.y);
         spAppendUnitNoChaseCategory(unitId,"LVNOCHASE");
         res[#res + 1] = unitId;
     end
@@ -100,11 +130,19 @@ function gadget:SpawnSquad(id,target,args)
     local targetPos = self:GetTargetPos(target,args.TargetPosOp);
     local user = LiveGame.UserMap[id];
     local squadTable = {}
-
+    local startUnit = LiveGame.StartUnitList[user.Group + 1];
+    local radius = 0;
+    local calcPosCxt = {};
     --bornPos:add(30,30);
-
+    local i = 0;
     for _, value in ipairs(args.SquadGroup) do
-        self:SpawnSquadReal(squadTable,bornPos,value.Squad,value.Count,user,value.BornOp)
+        local def = UnitDefNames[value.Squad];
+        radius = math.max(radius,def.radius);
+        if def ~= nil then
+            self:SpawnSquadReal(squadTable,i,radius,startUnit.bornDir,bornPos,value.Squad,value.Count,
+                startUnit.teamID,value.BornOp,calcPosCxt)
+        end
+        i = i + value.Count;
     end
 
     self:OrderSquad(squadTable,targetPos,args.OrderOp);
