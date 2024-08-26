@@ -24,6 +24,10 @@ local spDestroyFeature = Spring.DestroyFeature;
 local WaitRecoveryWreckage = {}
 local WreckageExistTime = 60;
 
+local SpawnedUnitTable = {}
+local UnitKillReward =  include("luarules/configs/LiveGame/UnitKillReward.lua");
+local WaitNotifyKillUnitReward = {}
+
 function gadget:GameStart()
     Spring.SetLogSectionFilterLevel(self:GetInfo().name, LOG.INFO)
     LiveGame = _G.LiveGame;
@@ -118,6 +122,18 @@ function gadget:OrderSquad(units,target,op)
 	end
 end
 
+function gadget:AppendUnit(teamID,uid,units)
+    if SpawnedUnitTable[teamID] == nil then
+        SpawnedUnitTable[teamID] = {}
+    end
+    if SpawnedUnitTable[teamID][uid] == nil then
+        SpawnedUnitTable[teamID][uid] = {}
+    end
+    for _, value in ipairs(units) do
+        SpawnedUnitTable[teamID][uid][value] = 1
+    end
+end
+
 function gadget:SpawnSquad(id,target,args)
     if target == nil then
         target = self:GetTargetFormId(id);
@@ -145,6 +161,7 @@ function gadget:SpawnSquad(id,target,args)
         i = i + value.Count;
     end
 
+    self:AppendUnit(startUnit.teamID,id,squadTable);
     self:OrderSquad(squadTable,targetPos,args.OrderOp);
 
 end
@@ -178,10 +195,7 @@ function gadget:FeatureCreated(featureID, allyTeam)
     end
 end
 
-function gadget:GameFrame(n)
-    if n % 10 == 0 then
-        self:CheckTeamEnergy();
-    end
+function gadget:RecoveryWreckage()
     for key, value in pairs(WaitRecoveryWreckage) do
         local v = value - 1;
         if v <= 0 then
@@ -192,3 +206,72 @@ function gadget:GameFrame(n)
         end
     end
 end
+
+function gadget:NotifyUserReward()
+    for uid, v in pairs(WaitNotifyKillUnitReward) do
+        if v.reward > 0 or v.killCount > 0 then
+            local msg = { cmd = "unitReward" , args = {} }
+            if v.reward > 0 then
+                msg.args.reward = v.reward;
+                v.reward = 0;
+            end
+            if v.killCount > 0 then
+                msg.args.killCount = v.killCount;
+                v.killCount = 0;
+            end
+            Spring.SendLocalMemMsg( msg )
+        end
+    end
+end
+
+function gadget:GameFrame(n)
+    if n % 10 == 0 then
+        self:CheckTeamEnergy();
+    end
+    self:RecoveryWreckage();
+    if n % 150 == 0 then
+        self:NotifyUserReward()
+    end
+end
+
+function gadget:GetUserByUnitId(unitID,teamID)
+    if SpawnedUnitTable[teamID] ~= nil then
+        for uid, table in pairs(SpawnedUnitTable[teamID]) do
+            if table[unitID] ~= nil and table[unitID] > 0 then
+                return uid;
+            end
+        end
+    end
+    return nil;
+end
+
+function gadget:GetUnitReward(unitDefID)
+    local def = UnitDefs[unitDefID];
+    if def ~= nil and UnitKillReward[def.name] ~= nil then
+        return UnitKillReward[def.name]
+    end
+    return 1
+end
+
+function gadget:AddReward(uid,reward)
+    if WaitNotifyKillUnitReward[uid] == nil then
+        WaitNotifyKillUnitReward[uid] = {  reward = 0, killCount = 0  }
+    end
+    WaitNotifyKillUnitReward[uid].reward = WaitNotifyKillUnitReward[uid].reward + reward;
+    WaitNotifyKillUnitReward[uid].killCount = WaitNotifyKillUnitReward[uid].killCount + 1;
+end
+
+function gadget:UnitDestroyed(unitID,unitDefID,teamID,attackerID)
+    local deadUid = self:GetUserByUnitId(unitID,teamID);
+    if deadUid ~= nil then
+        SpawnedUnitTable[teamID][deadUid][unitID] = nil;
+        local reward = self:GetUnitReward(unitDefID);
+        if reward ~= nil and reward > 0 then
+            local killUid = self:GetUserByUnitId(attackerID);
+            if killUid ~= nil then
+                self:AddReward(killUid,reward);
+            end
+        end
+    end
+end
+
