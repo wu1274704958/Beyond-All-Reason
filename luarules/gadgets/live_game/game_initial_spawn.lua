@@ -54,7 +54,7 @@ local LiveGame = {
 function gadget:Initialize()
     _G.LiveGame = LiveGame;
     Spring.SetLogSectionFilterLevel(gadget:GetInfo().name, LOG.INFO)
-    Spring.InitLMCommCentral("TEST",4096);
+    Spring.InitLMCommCentral("BarGameMem",1024 * 1024 * 10);
     Spring.Log(gadget:GetInfo().name, LOG.INFO,"live game mode initialize")
     gadget:addLiveGameGadgets()
     local gaiaTeamID = Spring.GetGaiaTeamID()
@@ -227,6 +227,7 @@ end
 function gadget:GameStart()
     SetupGame()
     LiveGame.StartUnitList = startUnitList;
+    Spring.SendLocalMemMsg( { cmd = "preStart" , args = {teamCount = #startUnitList, mapName = Game.mapName } } );
     Spring.SendLocalMemMsg( { cmd = "start" } );
 end
 
@@ -242,10 +243,29 @@ local function printTable(tab)
     end
 end
 
+function gadget:CheckGameOverForce()
+    local minHp = 0;
+    local minHpGroup = 0;
+    for i, v in ipairs(startUnitList) do
+        local health, maxHealth = Spring.GetUnitHealth( v.unitID );
+        if minHp <= 0 or health < minHp then
+            minHp = health;
+            minHpGroup = i;
+        end
+    end
+    if minHpGroup > 0 then
+        Spring.SendLocalMemMsg( { cmd = "end",args = { winner = minHpGroup - 1 }} )
+        return true
+    end
+    return false
+end
+
 function gadget:OnRecvLocalMsg(msg)
     if msg.cmd ~= nil then
         if msg.cmd == "restart" then
             Spring.Reload();
+        elseif msg.cmd == "forceFinish" then
+            self:CheckGameOverForce();
         end
     end
 end
@@ -300,7 +320,7 @@ function gadget:CheckGameOver()
     end
     if liveCount == 1 and liveIndex > 0 then
         Spring.SendLocalMemMsg( { cmd = "end",args = { winner = liveIndex - 1 }} )
-        Spring.SendCommands({"pause 1"})
+        --Spring.SendCommands({"pause 1"})
         return true
     end
     return false
@@ -330,7 +350,7 @@ function gadget:NotifyUnitDestroyed(n)
     if n % 30 == 0 then
         for i, v in ipairs(waitNotifyUnitDestroy) do
             if v > 0 then
-                Spring.SendLocalMemMsg( { cmd = "unitDestroyed",args = { count = v }} )
+                Spring.SendLocalMemMsg( { cmd = "unitDestroyed",args = { group = i - 1, count = v }} )
                 waitNotifyUnitDestroy[i] = 0;
             end
         end

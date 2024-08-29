@@ -135,7 +135,7 @@ function gadget:AppendUnit(teamID,uid,units)
 end
 
 function gadget:SpawnSquad(id,target,args)
-    if target == nil then
+    if target == nil or target == -1 then
         target = self:GetTargetFormId(id);
     end
     if target == nil then 
