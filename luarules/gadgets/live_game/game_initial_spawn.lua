@@ -9,6 +9,7 @@ local spSetTeamRulesParam = Spring.SetTeamRulesParam
 local spGetAllyTeamStartBox = Spring.GetAllyTeamStartBox
 local spCreateUnit = Spring.CreateUnit
 local spGetGroundHeight = Spring.GetGroundHeight
+local spTickLMCommCentral = Spring.TickLMCommCentral
 ------------------------------------------------------------
 -- Config
 ----------------------------------------------------------------
@@ -136,6 +137,11 @@ function gadget:RecvLuaMsg(msg, playerID)
         ReSetupGame();
         return;
     end
+    if msg == "live_test_reload" then
+        Spring.ReleaseLMCommCentral();
+        Spring.Reload();
+        return
+    end
     -- if msg == "live_print_camera_state" then 
     --     PrintCameraState()
     --     return;
@@ -229,6 +235,7 @@ function gadget:GameStart()
     LiveGame.StartUnitList = startUnitList;
     Spring.SendLocalMemMsg( { cmd = "preStart" , args = {teamCount = #startUnitList, mapName = Game.mapName } } );
     Spring.SendLocalMemMsg( { cmd = "start" } );
+    Spring.Echo("Send Start......")
 end
 
 
@@ -254,7 +261,7 @@ function gadget:CheckGameOverForce()
         end
     end
     if minHpGroup > 0 then
-        Spring.SendLocalMemMsg( { cmd = "end",args = { winner = minHpGroup - 1 }} )
+        Spring.SendLocalMemMsg( { cmd = "finish",args = { winner = minHpGroup - 1 }} )
         return true
     end
     return false
@@ -263,6 +270,8 @@ end
 function gadget:OnRecvLocalMsg(msg)
     if msg.cmd ~= nil then
         if msg.cmd == "restart" then
+            Spring.SendLocalMemMsg( { cmd = "end"} )
+            Spring.ReleaseLMCommCentral(false);
             Spring.Reload();
         elseif msg.cmd == "forceFinish" then
             self:CheckGameOverForce();
@@ -271,7 +280,7 @@ function gadget:OnRecvLocalMsg(msg)
 end
 
 function gadget:Shutdown()
-    Spring.ReleaseLMCommCentral();
+    Spring.ReleaseLMCommCentral(true);
     Spring.Log(gadget:GetInfo().name,LOG.INFO,"Release local mem Comm Central!!!");
 end
 
@@ -319,7 +328,7 @@ function gadget:CheckGameOver()
         end
     end
     if liveCount == 1 and liveIndex > 0 then
-        Spring.SendLocalMemMsg( { cmd = "end",args = { winner = liveIndex - 1 }} )
+        Spring.SendLocalMemMsg( { cmd = "finish",args = { winner = liveIndex - 1 }} )
         --Spring.SendCommands({"pause 1"})
         return true
     end
@@ -359,4 +368,5 @@ end
 
 function gadget:GameFrame(n)
     self:NotifyUnitDestroyed(n);
+    spTickLMCommCentral();
 end

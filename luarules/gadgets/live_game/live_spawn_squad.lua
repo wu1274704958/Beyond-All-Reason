@@ -32,14 +32,10 @@ function gadget:GameStart()
     Spring.SetLogSectionFilterLevel(self:GetInfo().name, LOG.INFO)
     LiveGame = _G.LiveGame;
     Spring.Echo("spawn squad start")
-
-    for _, value in ipairs(LiveGame.StartUnitList) do
-        spSetTeamResource(value.teamID,"es",MaxEnergy);
-    end
 end
 
 function gadget:GetNextTarget(selfGroup,current)
-    local groupCount = #(LiveGame.UserData);
+    local groupCount = #(LiveGame.StartUnitList);
     local next = current + 1;
     if next == groupCount then
         return self:GetNextTarget(selfGroup,-1);
@@ -153,10 +149,12 @@ function gadget:SpawnSquad(id,target,args)
     local i = 0;
     for _, value in ipairs(args.SquadGroup) do
         local def = UnitDefNames[value.Squad];
-        radius = math.max(radius,def.radius);
         if def ~= nil then
+            radius = math.max(radius,def.radius);
             self:SpawnSquadReal(squadTable,i,radius,startUnit.bornDir,bornPos,value.Squad,value.Count,
                 startUnit.teamID,value.BornOp,calcPosCxt)
+        else
+            Spring.Log(self:GetInfo().name,LOG.ERROR,'not found unit = ' .. value.Squad)
         end
         i = i + value.Count;
     end
@@ -176,7 +174,8 @@ end
 
 function gadget:CheckTeamEnergy()
     for _, value in ipairs(LiveGame.StartUnitList) do
-        spSetTeamResource(value.teamID,"e",MaxEnergy);
+        spSetTeamResource(value.teamID,"es",MaxEnergy,true);
+        spSetTeamResource(value.teamID,"e",MaxEnergy,true);
     end
 end
 
@@ -210,7 +209,7 @@ end
 function gadget:NotifyUserReward()
     for uid, v in pairs(WaitNotifyKillUnitReward) do
         if v.reward > 0 or v.killCount > 0 then
-            local msg = { cmd = "unitReward" , args = {} }
+            local msg = { cmd = "unitReward" , args = { id = uid, reward = 0,killCount = 0 } }
             if v.reward > 0 then
                 msg.args.reward = v.reward;
                 v.reward = 0;

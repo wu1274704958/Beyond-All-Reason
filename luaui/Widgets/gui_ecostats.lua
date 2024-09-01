@@ -516,6 +516,10 @@ local function setReclaimerUnits()
 end
 
 function widget:Initialize()
+	if widgetHandler:IsEnableLiveGame() then
+		widgetHandler:RemoveWidget(self);
+		return;
+	end
 	if not (Spring.GetSpectatingState() or isReplay) then
 		inSpecMode = false
 	else

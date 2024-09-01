@@ -121,7 +121,7 @@ end
 function widget:DrawWorld()
 	if Spring.IsGUIHidden() then return end
 	if Spring.GetGameFrame() < hideBelowGameframe then return end
-	if not widget:NeedDraw() then return end
+	--if not widget:NeedDraw() then return end
 
 	glDepthTest(true)
 	glAlphaTest(GL_GREATER, 0)

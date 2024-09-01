@@ -843,6 +843,10 @@ function widget:TeamDied(teamID)
 end
 
 function widget:Initialize()
+    if widgetHandler:IsEnableLiveGame() then
+		widgetHandler:RemoveWidget(self);
+		return;
+	end
 	widget:ViewResize()
 
 	widgetHandler:RegisterGlobal('CameraBroadcastEvent', CameraBroadcastEvent)

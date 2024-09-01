@@ -1171,6 +1171,10 @@ local function cycleBuilder()
 end
 
 function widget:Initialize()
+	if widgetHandler:IsEnableLiveGame() then
+		widgetHandler:RemoveWidget(self);
+		return;
+	end
 	myTeamID = Spring.GetMyTeamID()
 	isSpec = Spring.GetSpectatingState()
 	isPregame = Spring.GetGameFrame() == 0 and not isSpec

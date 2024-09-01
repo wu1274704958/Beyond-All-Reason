@@ -5621,6 +5621,11 @@ function init()
 			Spring.SendLuaRulesMsg("live_test_spawn_squad")
 		  end,
 		},
+		{ id = "live_TestReload", group = "dev", category = types.dev, name = "TestReload", type = "click", value = false, description = "Test reload game",
+		  onclick = function()
+			Spring.SendLuaRulesMsg("live_test_reload")
+		  end,
+		},
 		-- TODO add SetWaterParams:
 		--absorb = {number r, number g, number b},
 		--baseColor = {number r, number g, number b},
