@@ -42,6 +42,53 @@ function gadget:GameStart()
     Spring.Echo("build tower start")
 end
 
+function gadget:ShowPlayerName(data)
+    local msg = {
+        id = data.Id,
+        name = data.Name,
+        unitId = data.UnitId,
+    }
+    local textMsg = "ShowLivePlayerName"..Json.encode(msg);
+    Spring.SendLuaUIMsg(textMsg)
+end
+
+function gadget:AddCustomTower(id,unit)
+
+    local user = UserMap[id];
+    if user == nil then
+        Spring.Log(gadget:GetInfo().name,LOG.ERROR,string.format("AddCustomTower failed not found user = %s",id))
+        return
+    end
+
+    local startUnit = LiveGame.StartUnitList[user.Group + 1];
+    local def = UnitDefNames[unit];
+    if def == null then
+        Spring.Log(gadget:GetInfo().name,LOG.ERROR,string.format("AddCustomTower failed not found unit = %s",unit))
+        return
+    end
+
+    if user.UnitId > 0 then
+        spDestroyUnit(user.UnitId,false,true,nil,true);
+    end
+
+    local y = spGetGroundHeight(user.Pos.x, user.Pos.y)
+    local unitID = spCreateUnit(unit, user.Pos.x, y, user.Pos.y, 0, startUnit.teamID)
+
+    spSetUnitDirection(unitID,startUnit.bornDir.x,0,startUnit.bornDir.y);
+    spAppendUnitCategory(unitID,"LVNOCHASE");
+    spSetUnitInvincible(unitID,-1)
+
+    user.UnitId = unitID;
+
+    self:ShowPlayerName(user)
+end
+
+function gadget:ChangeTower(args)
+    if args ~= nil and args.tower ~= nil and args.id ~= nil then
+        self:AddCustomTower(args.id,args.tower);
+    end
+end
+
 function gadget:OnRecvLocalMsg(msg)
     if Start and msg.cmd ~= nil then
         if msg.cmd == "join" then
@@ -49,6 +96,8 @@ function gadget:OnRecvLocalMsg(msg)
             if data ~= nil then
                 self:ShowPlayerName(data)
             end
+        elseif msg.cmd == "changeTower" then
+            self:ChangeTower(msg.args);
         end
     end
 end
@@ -62,7 +111,6 @@ local function GetUnitByType(type,group)
         return "armamb"
     end
 end
-
 
 
 function gadget:AddTower(args)
@@ -107,16 +155,6 @@ function gadget:AddTower(args)
     UserMap[args.Id] = user;
 
     return user;
-end
-
-function gadget:ShowPlayerName(data)
-    local msg = {
-        id = data.Id,
-        name = data.Name,
-        unitId = data.UnitId,
-    }
-    local textMsg = "ShowLivePlayerName"..Json.encode(msg);
-    Spring.SendLuaUIMsg(textMsg)
 end
 
 function gadget:RemoveAllTower()
