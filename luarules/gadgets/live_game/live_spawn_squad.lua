@@ -224,11 +224,11 @@ function gadget:NotifyUserReward()
 end
 
 function gadget:GameFrame(n)
-    if n % 10 == 0 then
+    if (n % 30) == 0 then
         self:CheckTeamEnergy();
     end
     self:RecoveryWreckage();
-    if n % 150 == 0 then
+    if (n % 70) == 0 then
         self:NotifyUserReward()
     end
 end
@@ -260,13 +260,13 @@ function gadget:AddReward(uid,reward)
     WaitNotifyKillUnitReward[uid].killCount = WaitNotifyKillUnitReward[uid].killCount + 1;
 end
 
-function gadget:UnitDestroyed(unitID,unitDefID,teamID,attackerID)
+function gadget:UnitDestroyed(unitID,unitDefID,teamID,attackerID,attackerDefID,attackerTeamID)
     local deadUid = self:GetUserByUnitId(unitID,teamID);
     if deadUid ~= nil then
         SpawnedUnitTable[teamID][deadUid][unitID] = nil;
         local reward = self:GetUnitReward(unitDefID);
         if reward ~= nil and reward > 0 then
-            local killUid = self:GetUserByUnitId(attackerID);
+            local killUid = self:GetUserByUnitId(attackerID,attackerTeamID);
             if killUid ~= nil then
                 self:AddReward(killUid,reward);
             end

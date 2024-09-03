@@ -367,6 +367,8 @@ function gadget:NotifyUnitDestroyed(n)
 end
 
 function gadget:GameFrame(n)
-    self:NotifyUnitDestroyed(n);
+    if (n % 30) == 0 then
+        self:NotifyUnitDestroyed(n);
+    end
     spTickLMCommCentral();
 end
