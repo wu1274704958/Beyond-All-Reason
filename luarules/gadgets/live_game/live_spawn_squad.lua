@@ -25,7 +25,7 @@ local WaitRecoveryWreckage = {}
 local WreckageExistTime = 60;
 
 local SpawnedUnitTable = {}
-local UnitKillReward =  include("luarules/configs/LiveGame/UnitKillReward.lua");
+local UnitPrice =  include("luarules/configs/LiveGame/UnitPrice.lua");
 local WaitNotifyKillUnitReward = {}
 
 function gadget:GameStart()
@@ -246,10 +246,10 @@ end
 
 function gadget:GetUnitReward(unitDefID)
     local def = UnitDefs[unitDefID];
-    if def ~= nil and UnitKillReward[def.name] ~= nil then
-        return UnitKillReward[def.name]
+    if def ~= nil and UnitPrice[def.name] ~= nil then
+        return UnitPrice[def.name] * 0.2;
     end
-    return 1
+    return 0
 end
 
 function gadget:AddReward(uid,reward)
