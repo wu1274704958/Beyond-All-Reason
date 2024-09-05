@@ -1982,6 +1982,10 @@ function widget:LanguageChanged()
 end
 
 function widget:Initialize()
+	if widgetHandler:IsEnableLiveGame() then
+		widgetHandler:RemoveWidget(self);
+		return;
+	end
 	gameFrame = Spring.GetGameFrame()
 	Spring.SendCommands("resbar 0")
 
