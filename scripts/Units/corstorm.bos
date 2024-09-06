@@ -350,7 +350,7 @@ StartMoving()
 {
 	signal SIG_WALK;
 	set-signal-mask SIG_WALK;
-	bMoving = 1;
+	bMoving = TRUE;
 	start-script UnitSpeed();
 	start-script walk();
 }
@@ -358,8 +358,8 @@ StartMoving()
 StopMoving()
 {
 	signal SIG_WALK;
-	bMoving = 0;
-	start-script StopWalking();
+	bMoving = FALSE;
+	call-script StopWalking();
 }
 
 Create()
@@ -377,7 +377,7 @@ Create()
 	animSpeed = 4;
 	hide lfirept;
 	hide rfirept;
-	start-script StopMoving();
+	call-script StopMoving();
 }
 
 SweetSpot(piecenum)
