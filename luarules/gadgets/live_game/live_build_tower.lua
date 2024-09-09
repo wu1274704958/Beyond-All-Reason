@@ -77,6 +77,7 @@ function gadget:AddCustomTower(id,unit)
     spSetUnitDirection(unitID,startUnit.bornDir.x,0,startUnit.bornDir.y);
     spAppendUnitCategory(unitID,"LVNOCHASE");
     spSetUnitInvincible(unitID,-1)
+    Spring.GiveOrderToUnit(unitID , CMD.FIRE_STATE, { 2 }, 0 )
 
     user.UnitId = unitID;
 
@@ -140,6 +141,7 @@ function gadget:AddTower(args)
     spSetUnitDirection(unitID,startUnit.bornDir.x,0,startUnit.bornDir.y);
     spAppendUnitCategory(unitID,"LVNOCHASE");
     spSetUnitInvincible(unitID,-1)
+    Spring.GiveOrderToUnit(unitID , CMD.FIRE_STATE, { 2 }, 0 )
 
     local user = {
         Pos = pos,

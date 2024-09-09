@@ -31,7 +31,7 @@ if legcomDefID then
 	validStartUnits[legcomDefID] = true
 end
 
-local cordoomDefID = UnitDefNames.cordoom_lv and UnitDefNames.cordoom_lv.id
+local cordoomDefID = UnitDefNames.armvulc_lv and UnitDefNames.armvulc_lv.id
 if cordoomDefID then
 	validStartUnits[cordoomDefID] = true
 end
@@ -198,7 +198,7 @@ local function spawnStartUnit(teamID, x, z)
     local unitID = spCreateUnit(startUnit, x, y, z, 0, teamID)
     if unitID then
         startUnitList[#startUnitList + 1] = { unitID = unitID, teamID = teamID, x = x, y = y, z = z }
-        
+        Spring.GiveOrderToUnit(unitID , CMD.FIRE_STATE, { 2 }, 0 )
         --Spring.MoveCtrl.Enable(unitID)
     end
 
@@ -356,18 +356,22 @@ function gadget:UnitDestroyed(unitID,unitDefID,teamID)
 end
 
 function gadget:NotifyUnitDestroyed(n)
-    if n % 30 == 0 then
-        for i, v in ipairs(waitNotifyUnitDestroy) do
-            if v > 0 then
-                Spring.SendLocalMemMsg( { cmd = "unitDestroyed",args = { group = i - 1, count = v }} )
-                waitNotifyUnitDestroy[i] = 0;
-            end
+    local msg = { cmd = "unitDestroyed",args = { IsArray = true }}
+    local j = 0;
+    for i, v in pairs(waitNotifyUnitDestroy) do
+        if v > 0 then
+            msg.args[j + 1] = { group = i - 1, count = v }
+            j = j + 1
+            waitNotifyUnitDestroy[i] = 0;
         end
+    end
+    if j > 0 then
+        Spring.SendLocalMemMsg( msg )
     end
 end
 
 function gadget:GameFrame(n)
-    if (n % 30) == 0 then
+    if (n % 60) == 0 then
         self:NotifyUnitDestroyed(n);
     end
     spTickLMCommCentral();

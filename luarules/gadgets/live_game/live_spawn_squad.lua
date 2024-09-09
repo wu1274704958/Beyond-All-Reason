@@ -28,6 +28,8 @@ local SpawnedUnitTable = {}
 local UnitPrice =  include("luarules/configs/LiveGame/UnitPrice.lua");
 local WaitNotifyKillUnitReward = {}
 
+local EBornShowName = 1;
+
 function gadget:GameStart()
     Spring.SetLogSectionFilterLevel(self:GetInfo().name, LOG.INFO)
     LiveGame = _G.LiveGame;
@@ -99,7 +101,17 @@ local function GetNextPosFuncDef(originPos,forward,index,r,cxt)
     return pos;
 end
 
-function gadget:SpawnSquadReal(res,b,radius,bornDir,bornPos,unit,count,teamID,op,calcPosCxt)
+function gadget:ShowPlayerName(data)
+    local msg = {
+        id = data.Id,
+        name = data.Name,
+        unitId = data.UnitId,
+    }
+    local textMsg = "ShowLivePlayerName"..Json.encode(msg);
+    Spring.SendLuaUIMsg(textMsg)
+end
+
+function gadget:SpawnSquadReal(res,b,radius,bornDir,bornPos,unit,count,teamID,op,calcPosCxt,user)
     
     for i = 1,count do
         local pos = GetNextPosFuncDef(bornPos,bornDir,b + (i - 1),radius,calcPosCxt);
@@ -107,6 +119,9 @@ function gadget:SpawnSquadReal(res,b,radius,bornDir,bornPos,unit,count,teamID,op
         local unitId = spCreateUnit(unit,pos.x,y,pos.y,0,teamID);
         spSetUnitDirection(unitId,bornDir.x,0,bornDir.y);
         spAppendUnitNoChaseCategory(unitId,"LVNOCHASE");
+        if op ~= nil and op == EBornShowName then
+            self:ShowPlayerName({Id = user.Id,Name = user.Name, UnitId = unitId });
+        end
         res[#res + 1] = unitId;
     end
 end
@@ -152,7 +167,7 @@ function gadget:SpawnSquad(id,target,args)
         if def ~= nil then
             radius = math.max(radius,def.radius);
             self:SpawnSquadReal(squadTable,i,radius,startUnit.bornDir,bornPos,value.Squad,value.Count,
-                startUnit.teamID,value.BornOp,calcPosCxt)
+                startUnit.teamID,value.BornOp,calcPosCxt,user)
         else
             Spring.Log(self:GetInfo().name,LOG.ERROR,'not found unit = ' .. value.Squad)
         end
@@ -166,8 +181,10 @@ end
 
 function gadget:OnRecvLocalMsg(msg)
     if LiveGame ~= nil and msg.cmd ~= nil then
-        if msg.cmd == "spawn" and msg.args ~= nil and msg.args.Id ~= nil then
-            self:SpawnSquad(msg.args.Id,msg.args.Target,msg.args);
+        if msg.cmd == "spawn" and msg.args ~= nil then
+            for i, val in ipairs(msg.args) do
+                self:SpawnSquad(val.Id,val.Target,val);
+            end
         end
     end
 end
@@ -207,19 +224,25 @@ function gadget:RecoveryWreckage()
 end
 
 function gadget:NotifyUserReward()
+    local msg = { cmd = "unitReward" , args = { IsArray = true } }
+    local j = 0
     for uid, v in pairs(WaitNotifyKillUnitReward) do
         if v.reward > 0 or v.killCount > 0 then
-            local msg = { cmd = "unitReward" , args = { id = uid, reward = 0,killCount = 0 } }
+            local it = { id = uid, reward = 0,killCount = 0 }
             if v.reward > 0 then
-                msg.args.reward = v.reward;
+                it.reward = v.reward;
                 v.reward = 0;
             end
             if v.killCount > 0 then
-                msg.args.killCount = v.killCount;
+                it.killCount = v.killCount;
                 v.killCount = 0;
             end
-            Spring.SendLocalMemMsg( msg )
+            msg.args[j + 1] = it
+            j = j + 1
         end
+    end
+    if j > 0 then
+        Spring.SendLocalMemMsg( msg )
     end
 end
 
@@ -249,7 +272,7 @@ function gadget:GetUnitReward(unitDefID)
     if def ~= nil and UnitPrice[def.name] ~= nil then
         return UnitPrice[def.name] * 0.2;
     end
-    return 0
+    return 1
 end
 
 function gadget:AddReward(uid,reward)

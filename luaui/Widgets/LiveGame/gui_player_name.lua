@@ -10,7 +10,7 @@ function widget:GetInfo()
 	}
 end
 
-local fontSize = 18
+local fontSize = 22
 local hideBelowGameframe = 10
 local scaleFontAmount = 120
 local nameScaling = true
@@ -63,8 +63,7 @@ local font = gl.LoadFont(fontfile, fontfileSize * fontfileScale, fontfileOutline
 local usedFontSize
 
 local drawList = {}
-local players = {}
-local unitMap = {}
+local unitNameMap = {}
 
 
 local function RemoveLists()
@@ -78,14 +77,13 @@ function widget:Initialize()
     Spring.Echo("Live Player Name UI init");
 end
 
-local function CreateDrawNameList(attributes,id)
-	local key = id..'name';
+local function CreateDrawNameList(attributes,key)
 	if drawList[key] ~= nil then
 		gl.DeleteList(drawList[key])
 	end
 	drawList[key] = gl.CreateList(function()
 		local x,y = 0,0
-		local outlineColor = { 0, 0, 0, 1 }
+		local outlineColor = { 0.0, 0.0, 0.0, 1 }
 		if (attributes.color[1] + attributes.color[2] * 1.2 + attributes.color[3] * 0.4) < 0.65 then
 			outlineColor = { 1, 1, 1, 1 }		-- try to keep these values the same as the playerlist
 		end
@@ -98,10 +96,9 @@ local function CreateDrawNameList(attributes,id)
 	end)
 end
 
-local function DrawName(attributes,id)
-	local key = id..'name';
+local function DrawName(attributes,key)
 	if drawList[key] == nil then
-		CreateDrawNameList(attributes,id)
+		CreateDrawNameList(attributes,key)
 	end
 	glTranslate(0, attributes.height, 0)
 	glBillboard()
@@ -112,10 +109,6 @@ local function DrawName(attributes,id)
 	if nameScaling then
 		glScale(1, 1, 1)
 	end
-end
-
-function widget:NeedDraw()
-	return #players > 0;
 end
 
 function widget:DrawWorld()
@@ -129,13 +122,12 @@ function widget:DrawWorld()
 
 	local camX, camY, camZ = GetCameraPosition()
 	local camDistance
-	for id, player in pairs(players) do
-		local unitID = player.unitId;
+	for unitID, val in pairs(unitNameMap) do
 		if IsUnitVisible(unitID, 50) and IsUnitInView(unitID) then
 			local x, y, z = GetUnitPosition(unitID)
 			camDistance = diag(camX - x, camY - y, camZ - z)
 			usedFontSize = (fontSize * 0.5) + (camDistance / scaleFontAmount)
-			glDrawFuncAtUnit(unitID, false, DrawName, player.drawNameAttr,id)
+			glDrawFuncAtUnit(unitID, false, DrawName, val.drawNameAttr,unitID)
 		end
 	end
 
@@ -167,14 +159,14 @@ function widget:RemoveDrawList(key)
 end
 
 function widget:AddPlayerName(unitId,name,id,color)
-	if players[id] ~= nil then
-		widget:RemoveDrawList(id..'name')
+	if unitNameMap[unitId] ~= nil then
+		widget:RemoveDrawList(unitId)
 	else
-		players[id] = {}
+		unitNameMap[unitId] = { }
 	end
-	players[id].unitId = unitId;
-	players[id].drawNameAttr = widget:CreateDrawNameAttr(unitId,name,color);
-	unitMap[unitId] = id;
+	
+	unitNameMap[unitId].uid = id;
+	unitNameMap[unitId].drawNameAttr = widget:CreateDrawNameAttr(unitId,name,color);
 end
 
 
@@ -198,12 +190,8 @@ end
 
 
 function widget:UnitDestroyed(unitID, unitDefID, unitTeam)
-	if unitMap[unitID] ~= nil then
-		local id = unitMap[unitID];
-		local nameKey = id..'name';
-		widget:RemoveDrawList(nameKey);
-		drawList[nameKey] = nil;
-		players[id] = nil;
-		unitMap[unitID] = nil;
+	if unitNameMap[unitID] ~= nil then
+		unitNameMap[unitID] = nil;
+		widget:RemoveDrawList(unitID);
 	end
 end

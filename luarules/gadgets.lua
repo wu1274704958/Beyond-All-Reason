@@ -475,6 +475,8 @@ function gadgetHandler:LoadGadget(filename, overridevfsmode)
 	return gadget
 end
 
+local isEnableLiveGame = Spring.GetModOptions().live_game and Spring.GetModOptions().live_game == "normal";
+
 function gadgetHandler:NewGadget()
 	local gadget = {}
 	-- load the system calls into the gadget table
@@ -492,6 +494,10 @@ function gadgetHandler:NewGadget()
 
 	gadget.include = function(f)
 		return VFS.Include(f, gadget, VFSMODE)
+	end
+
+	gh.IsEnableLiveGame = function (_)
+		return isEnableLiveGame
 	end
 
 	gh.RaiseGadget = function(_)

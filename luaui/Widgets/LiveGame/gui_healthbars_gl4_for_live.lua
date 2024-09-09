@@ -341,7 +341,7 @@ for barname, bt in pairs(barTypeMap) do
 end
 
 local ShowHealthBarUnitMap = {
-	["cordoom_lv"] = true
+	["armvulc_lv"] = true
 }
 
 --------------------------------------------------------------------------------

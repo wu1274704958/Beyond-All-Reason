@@ -100,8 +100,8 @@ return {
      },
      ["Ascendancy v2.2"] = {
           pos = {
-               [0] = { x = 4500, z = 4800 },
-               [1] = { x = 7500, z = 4800 }
+               [0] = { x = 4700, z = 4800 },
+               [1] = { x = 7300, z = 4800 }
           },
           camera_state = {
                px = 5990.30811,
@@ -111,7 +111,7 @@ return {
                dy = -0.8568887,
                dz = -0.5155014,
                angle = 300,
-               dist = 2350.36841
+               dist = 2200.36841
           },
           GetNextPosFunc = GetNextPosFuncDef,
           GetTowerUnitByType = GetTowerUnitByTypeDef

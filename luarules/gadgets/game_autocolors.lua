@@ -522,6 +522,30 @@ if gadgetHandler:IsSyncedCode() then
 		end
 	end
 
+	if gadgetHandler:IsEnableLiveGame() then
+		local TeamColorMapForLive = {
+			[1] = { r = 0.0, g = 0.9 , b = 1.0 },
+			[0] = { r = 0.9, g = 0.2 , b = 0.4 },
+			[2] = { r = 0.0, g = 1.0 , b = 0.0 },
+			[3] = { r = 1.0, g = 0.92 , b = 0.016 },
+		}
+		local function setUpTeamColorForLive(teamID, allyTeamID, isAI)
+			local color = nil
+			if TeamColorMapForLive[teamID] ~= nil then
+				color = TeamColorMapForLive[teamID]
+			else
+				color = { r = 1.0,g = 1.0, b = 1.0 }
+				Spring.Echo("Live game not config color for team "..tostring(teamID) )
+			end
+			if color ~= nil then
+				Spring.SetTeamRulesParam(teamID, "AutoTeamColorRed", color.r * 255)
+				Spring.SetTeamRulesParam(teamID, "AutoTeamColorGreen", color.g * 255)
+				Spring.SetTeamRulesParam(teamID, "AutoTeamColorBlue", color.b * 255)
+			end
+		end
+		setUpTeamColor = setUpTeamColorForLive;
+	end
+
 	local AutoColors = {}
 	for i = 1, #teamList do
 		local teamID = teamList[i]
