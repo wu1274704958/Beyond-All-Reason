@@ -161,11 +161,11 @@ function gadget:SpawnSquad(id,target,args)
     local radius = 0;
     local calcPosCxt = {};
     --bornPos:add(30,30);
-    local i = 0;
+    local i = 1;
     for _, value in ipairs(args.SquadGroup) do
         local def = UnitDefNames[value.Squad];
         if def ~= nil then
-            radius = math.max(radius,def.radius);
+            radius = math.max(radius,def.radius + 16);
             self:SpawnSquadReal(squadTable,i,radius,startUnit.bornDir,bornPos,value.Squad,value.Count,
                 startUnit.teamID,value.BornOp,calcPosCxt,user)
         else
@@ -270,7 +270,7 @@ end
 function gadget:GetUnitReward(unitDefID)
     local def = UnitDefs[unitDefID];
     if def ~= nil and UnitPrice[def.name] ~= nil then
-        return UnitPrice[def.name] * 0.2;
+        return UnitPrice[def.name] * 0.3;
     end
     return 1
 end

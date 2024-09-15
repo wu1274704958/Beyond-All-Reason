@@ -437,7 +437,7 @@ local shaderConfig = { -- these are our shader defines
 shaderConfig.BARCORNER = 0.06 + (shaderConfig.BARHEIGHT / 9)
 shaderConfig.SMALLERCORNER = shaderConfig.BARCORNER * 0.6
 
-if debugmode then
+if true then
 	shaderConfig.DEBUGSHOW = 1 -- comment this to always show all bars
 end
 
@@ -558,6 +558,8 @@ end
 --------------------------------------------------------------------------------
 
 local function addBarForUnit(unitID, unitDefID, barname, reason)
+
+	if barname ~= "health" then return end
 	--Spring.Debug.TraceFullEcho()
 	if debugmode then Spring.Debug.TraceEcho(unitBars[unitID]) end
 	--Spring.Echo("Caller1:", tostring()".name), "caller2:", tostring(debug.getinfo(3).name))
@@ -844,26 +846,26 @@ local function init()
 end
 
 local function initfeaturebars()
-	clearInstanceTable(featureHealthVBO)
-	clearInstanceTable(featureResurrectVBO)
-	clearInstanceTable(featureReclaimVBO)
-	local gameFrame = Spring.GetGameFrame()
-	for i, featureID in ipairs(Spring.GetAllFeatures()) do
-		local featureDefID = Spring.GetFeatureDefID(featureID)
-		--local resurrectname = Spring.GetFeatureResurrect(featureID)
-		--if resurrectname then
-		--	resurrectableFeatures[featureID] = true
-			-- if it has resurrect progress, then just straight up just store a bar here for it?
-			-- or shall we only instantiate bars when needed? probably number 2 is smarter...
-		--end -- maybe store resurrect progress here?
+	-- clearInstanceTable(featureHealthVBO)
+	-- clearInstanceTable(featureResurrectVBO)
+	-- clearInstanceTable(featureReclaimVBO)
+	-- local gameFrame = Spring.GetGameFrame()
+	-- for i, featureID in ipairs(Spring.GetAllFeatures()) do
+	-- 	local featureDefID = Spring.GetFeatureDefID(featureID)
+	-- 	--local resurrectname = Spring.GetFeatureResurrect(featureID)
+	-- 	--if resurrectname then
+	-- 	--	resurrectableFeatures[featureID] = true
+	-- 		-- if it has resurrect progress, then just straight up just store a bar here for it?
+	-- 		-- or shall we only instantiate bars when needed? probably number 2 is smarter...
+	-- 	--end -- maybe store resurrect progress here?
 
-		if featureDefID then -- dont add features that we cant get the ID of
-			-- add a health bar for it (dont add one for pre-existing stuff)
-			widget:FeatureCreated(featureID)
-		else
+	-- 	if featureDefID then -- dont add features that we cant get the ID of
+	-- 		-- add a health bar for it (dont add one for pre-existing stuff)
+	-- 		widget:FeatureCreated(featureID)
+	-- 	else
 
-		end
-	end
+	-- 	end
+	-- end
 end
 
 --12:32 PM] Beherith: widget:PlayerChanged generalizations
@@ -1218,50 +1220,6 @@ function widget:GameFrame(n)
 			end
 		end
 	end
-end
-
-local rezreclaim = {0.0, 1.0}
-function widget:FeatureCreated(featureID)
-	local featureDefID = Spring.GetFeatureDefID(featureID)
-	local gameFrame = Spring.GetGameFrame()
-	-- some map-supplied features dont have a model, in these cases modelpath == ""
-	if FeatureDefs[featureDefID].name ~= 'geovent' and FeatureDefs[featureDefID].modelpath ~= ''  then
-		--Spring.Echo(FeatureDefs[featureDefID].name)
-		--featureBars[featureID] = 0 -- this is already done in AddBarToFeature
-
-		local health,maxhealth,rezProgress = Spring.GetFeatureHealth(featureID)
-
-		if gameFrame > 0 then
-			addBarToFeature(featureID, 'featurehealth')
-		else
-			if health ~= maxhealth then addBarToFeature(featureID, 'featurehealth') end
-		end
-
-
-		if rezProgress > 0 then
-			addBarToFeature(featureID, 'featureresurrect')
-		end
-
-		local _, _, _, _, reclaimLeft = Spring.GetFeatureResources(featureID)
-
-		if reclaimLeft < 1.0 then
-			addBarToFeature(featureID, 'featurereclaim')
-		end
-
-		if rezProgress > 0  or reclaimLeft < 1 then
-			-- We have to update the feature uniform buffers in this case, as features can be created with less than max health on the map with FP_featureplacer
-			rezreclaim[1] = rezProgress -- resurrect progress
-			rezreclaim[2] = reclaimLeft -- reclaim percent
-			gl.SetFeatureBufferUniforms(featureID, rezreclaim, 1) -- update GL, at offset of 1
-		end
-
-	end
-end
-
-function widget:FeatureDestroyed(featureID)
-	if debugmode then Spring.Echo("FeatureDestroyed",featureID, featureBars[featureID]) end
-	removeBarsFromFeature(featureID)
-	featureBars[featureID] = nil
 end
 
 function widget:DrawWorld()
